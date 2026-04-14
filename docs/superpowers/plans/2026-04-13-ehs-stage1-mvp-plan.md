@@ -58,7 +58,107 @@ mianshi/
 - Create: `python-ai-service/Dockerfile`
 - Create: `python-ai-service/README.md`
 
-- [ ] **Step 1: 创建 requirements.txt**
+## Task 1.2.5: 开发者体验补充（per DX Review）
+
+**Files:**
+- Create: `python-ai-service/.env.example`
+- Create: `docker-compose.yml`
+- Create: `README.md` (快速开始)
+
+- [ ] **Step 1: 创建 .env.example**
+
+```bash
+# EHS AI Service 配置模板
+SERVICE_NAME=ehs-ai-service
+HOST=0.0.0.0
+PORT=8000
+
+# Elasticsearch
+ES_URL=http://localhost:9200
+ES_INDEX=ehs-documents
+
+# Milvus
+MILVUS_URL=localhost
+MILVUS_PORT=19530
+MILVUS_COLLECTION=ehs-vectors
+
+# Neo4j
+NEO4J_URL=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
+
+# 模型
+RERANK_MODEL=BAAI/bge-reranker-base
+EMBEDDING_MODEL=BAAI/bge-base-zh-v1.5
+```
+
+- [ ] **Step 2: 创建 docker-compose.yml**
+
+```yaml
+version: '3.8'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+  
+  milvus:
+    image: milvusdb/milvus:v2.3.6
+    environment:
+      - ETCD_USE_HOST_MODE=true
+      - ETCD_ENDPOINTS=etcd:2379
+    depends_on:
+      - etcd
+    ports:
+      - "19530:19530"
+  
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+    ports:
+      - "2379:2379"
+  
+  ehs-ai-service:
+    build: ./python-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - ES_URL=http://elasticsearch:9200
+      - MILVUS_URL=milvus
+    depends_on:
+      - elasticsearch
+      - milvus
+```
+
+- [ ] **Step 3: 提交**
+
+```bash
+git add python-ai-service/.env.example docker-compose.yml
+git commit -m "docs: add developer onboarding (env template + docker-compose)"
+```
+
+---
+
+## Task 1.3: GraphRAG 检索（两路）
+
+**Critical Gaps Added (per Eng Review):**
+- GraphRAG 降级：ES/Milvus 失败时返回空结果而非 500 错误
+- LLM JSON 解析：非 JSON 响应时 fallback 到默认风险评估
+- API 输入验证：Pydantic validator 过滤恶意 payload
+
+**Files:**
+- Create: `python-ai-service/src/rag/es_search.py`
+- Create: `python-ai-service/src/rag/milvus_search.py`
+- Create: `python-ai-service/src/rag/reranker.py`
+- Create: `python-ai-service/src/rag/graph_rag.py`
+- Create: `python-ai-service/tests/test_graph_rag.py`
+
+- [ ] **Step 1: 编写 ES 检索测试**
 
 ```
 fastapi==0.109.0
@@ -337,6 +437,7 @@ class ESSearcher:
             return results
         except Exception as e:
             log.error(f"ES 检索失败：{e}")
+            # 降级：返回空结果，不中断整个检索流程
             return []
 ```
 
@@ -440,6 +541,7 @@ class MilvusSearcher:
             return result_list
         except Exception as e:
             log.error(f"Milvus 检索失败：{e}")
+            # 降级：返回空结果，不中断整个检索流程
             return []
 ```
 
@@ -730,17 +832,42 @@ class RiskAgent:
             response = self.llm(messages)
             # 解析 JSON 结果
             import json
-            result = json.loads(response.content)
-            log.info(f"风险感知完成，等级={result.get('risk_level')}")
-            return result
+            try:
+                result = json.loads(response.content)
+                # 验证必需字段
+                required_fields = ["risk_level", "reasoning", "impact_area", "suggested_actions"]
+                if not all(k in result for k in required_fields):
+                    raise ValueError(f"Missing required fields: {required_fields}")
+                log.info(f"风险感知完成，等级={result.get('risk_level')}")
+                return result
+            except (json.JSONDecodeError, ValueError) as e:
+                log.error(f"LLM 返回非 JSON 或格式错误：{e}")
+                # Fallback: 从响应中提取风险等级
+                return self._extract_risk_level(response.content)
         except Exception as e:
             log.error(f"风险评估失败：{e}")
             return {
                 "risk_level": "MEDIUM",
-                "reasoning": str(e),
+                "reasoning": f"LLM 调用失败：{str(e)}",
                 "impact_area": "未知",
-                "suggested_actions": ["通知值班经理"]
+                "suggested_actions": ["通知值班经理", "查看系统日志"]
             }
+    
+    def _extract_risk_level(self, response: str) -> dict:
+        """从非 JSON 响应中提取风险等级（fallback）"""
+        response_upper = response.upper()
+        if "HIGH" in response_upper or "严重" in response or "高" in response:
+            risk_level = "HIGH"
+        elif "LOW" in response_upper or "轻微" in response or "低" in response:
+            risk_level = "LOW"
+        else:
+            risk_level = "MEDIUM"
+        return {
+            "risk_level": risk_level,
+            "reasoning": f"从响应中提取：{response[:200]}",
+            "impact_area": "未知",
+            "suggested_actions": ["人工复核"]
+        }
 ```
 
 - [ ] **Step 3: 运行风险 Agent 测试**
@@ -996,6 +1123,11 @@ git commit -m "feat: implement Multi-Agent workflow with LangGraph"
 ---
 
 ## Task 1.5: 前端告警管理页面
+
+**Design States Added (per Design Review):**
+- Loading: 提交按钮显示 loading spinner，列表显示 skeleton
+- Error: Toast 错误消息 + 重试按钮
+- Empty: 空列表显示"暂无告警"插图 + "模拟上报"引导
 
 **Files:**
 - Create: `admin-console/package.json`
@@ -1284,6 +1416,37 @@ class AlertReportRequest(BaseModel):
     location: str
     alertLevel: int
     extraData: Optional[dict] = None
+    
+    # 输入验证（per Eng Review - API 安全）
+    @field_validator('deviceId', 'deviceType', 'alertType')
+    @classmethod
+    def validate_not_empty(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('字段不能为空')
+        if len(v) > 100:
+            raise ValueError('字段长度不能超过 100')
+        return v
+    
+    @field_validator('alertContent')
+    @classmethod
+    def validate_content(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('告警内容不能为空')
+        if len(v) > 2000:
+            raise ValueError('告警内容长度不能超过 2000')
+        # 防止 XSS/注入
+        dangerous_chars = ['<', '>', 'script', 'javascript', 'onerror']
+        for char in dangerous_chars:
+            if char.lower() in v.lower():
+                raise ValueError(f'告警内容包含非法字符：{char}')
+        return v
+    
+    @field_validator('alertLevel')
+    @classmethod
+    def validate_level(cls, v):
+        if not isinstance(v, int) or v < 1 or v > 5:
+            raise ValueError('告警级别必须是 1-5 的整数')
+        return v
 
 
 class AlertReportResponse(BaseModel):
