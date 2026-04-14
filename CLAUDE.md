@@ -17,10 +17,32 @@
 
 **第一反应原则**: 收到请求后，**第一个动作**是查表确定 Skill，而不是直接回答或执行。
 
-## 阶段流程
-brainstorming → writing-plans → TDD → code-review → QA → ship
+## 阶段流程（完整顺序 - 超级重要）
 
-**任何阶段不得跳过前置阶段**。
+```
+brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+```
+
+**详细说明：**
+
+| 阶段 | 技能 | 说明 | 是否必须 |
+|------|------|------|----------|
+| 1. brainstorming | `Superpowers: brainstorming` | 创意发散、需求澄清 | ✅ 必须 |
+| 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | 撰写实施计划、多视角审查 | ✅ 必须 |
+| 3. TDD | `Superpowers: test-driven-development` | 测试驱动开发 | ✅ 必须 |
+| 4. code-review | `Superpowers: requesting-code-review` | 代码审查 | ✅ 必须 |
+| 5. QA | `/qa` 或 `/browse` | 浏览器测试、端到端验证 | ✅ 必须 |
+| 6. /cso | `/cso` | 安全审计 | ✅ 必须 |
+| 7. ship | `/ship` | 发布上线 | ✅ 必须 |
+| 8. canary | `/canary` | 金丝雀发布（小流量验证） | ⚠️ 可选 |
+| 9. benchmark | `/benchmark` | 性能基准测试 | ⚠️ 可选 |
+| 10. document-release | `document-release` | 文档同步更新 | ✅ 必须 |
+| 11. retro | `/retro` | 项目复盘 | ✅ 必须 |
+
+**铁律：**
+1. 任何阶段不得跳过前置阶段
+2. 每个阶段完成后必须通过验证门（verification gate）
+3. 发现问题必须回退到对应阶段修复
 
 ## 会话启动检查
 1. `git status` → 检查未提交变更

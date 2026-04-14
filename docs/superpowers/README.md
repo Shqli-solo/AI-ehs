@@ -53,26 +53,25 @@
 
 ### 任务依赖关系
 
+**完整流程顺序（11 个阶段）：**
+
 ```
-brainstorming
-    ↓
-writing-plans
-    ↓
-TDD
-    ↓
-code-review
-    ↓
-QA
-    ↓
-ship
+brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
 ```
 
-**依赖规则**：
+**依赖规则：**
 - `writing-plans` 必须在 `brainstorming` 完成后创建
 - `TDD` 必须在 `writing-plans` 审查通过后开始
 - `code-review` 必须在 `TDD` 完成后进行
 - `QA` 必须在 `code-review` 通过后进行
-- `ship` 必须在 `QA` 通过后进行
+- `/cso` 必须在 `QA` 通过后进行（安全审计）
+- `ship` 必须在 `/cso` 通过后进行（发布合并）
+- `canary` 必须在 `ship` 后进行（金丝雀发布/小流量验证）
+- `benchmark` 必须在 `canary` 后进行（性能基准测试）
+- `document-release` 必须在 `benchmark` 后进行（文档同步）
+- `retro` 必须在 `document-release` 后进行（项目复盘）
+
+**铁律：任何阶段不得跳过前置阶段。**
 
 ---
 
@@ -80,14 +79,19 @@ ship
 
 | 阶段 | 完成标准 | 产出物 |
 |------|----------|--------|
-| **brainstorming** | 需求明确、边界清晰、用户确认 | 需求摘要（对话记录） |
-| **writing-plans** | 计划文档已写、`/autoplan` 审查通过 | `docs/superpowers/specs/*.md` |
-| **TDD** | 测试用例已写、测试全过 | 测试文件 + 实现代码 |
-| **code-review** | 审查通过、无 blocking issue | PR 或 git diff |
-| **QA** | `/qa` 验证通过、无 console error | QA 报告 |
-| **ship** | 已合并、已发布、更新 VERSION | git commit + tag |
+| **1. brainstorming** | 需求明确、边界清晰、用户确认 | 需求摘要（对话记录） |
+| **2. writing-plans** | 计划文档已写、`/autoplan` 审查通过 | `docs/superpowers/specs/*.md` |
+| **3. TDD** | 测试用例已写、测试全过 | 测试文件 + 实现代码 |
+| **4. code-review** | 审查通过、无 blocking issue | PR 或 git diff |
+| **5. QA** | `/qa` 验证通过、无 console error | QA 报告 |
+| **6. /cso** | 安全审计通过、无高危漏洞 | 安全审计报告 |
+| **7. ship** | 已合并、已发布、更新 VERSION | git commit + tag |
+| **8. canary** | 小流量验证通过、无异常告警 | Canary 监控报告 |
+| **9. benchmark** | 性能基线建立、指标达标 | 性能基准报告 |
+| **10. document-release** | 文档同步完成、CHANGELOG 更新 | README/CHANGELOG 更新 |
+| **11. retro** | 复盘报告完成、经验教训记录 | RETRO 报告 |
 
-**任何阶段不得跳过前置阶段。**
+**铁律：任何阶段不得跳过前置阶段。**
 
 ---
 

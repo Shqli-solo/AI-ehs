@@ -278,3 +278,30 @@ mianshi/
 **Last Updated**: 2026-04-14  
 **Git Branch**: master  
 **Latest Commit**: 0674613
+
+---
+
+## Superpowers + gstack 完整流程（11 阶段）
+
+**完整顺序：**
+```
+brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+```
+
+### 阶段 1 MVP 执行情况
+
+| 阶段 | 技能 | 状态 | 产出物 |
+|------|------|------|--------|
+| 1. brainstorming | `Superpowers: brainstorming` | ✅ | 需求文档 |
+| 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | ✅ | `docs/superpowers/plans/2026-04-13-ehs-stage1-mvp-plan.md` |
+| 3. TDD | `Superpowers: test-driven-development` | ✅ | 测试 + 实现代码 |
+| 4. code-review | `Superpowers: requesting-code-review` | ✅ | 审查报告 |
+| 5. QA | `/qa` | ✅ | QA 报告 |
+| 6. /cso | `/cso` | ✅ | 安全审计报告 |
+| 7. ship | `/ship` | ✅ | v1.0.1 发布 |
+| 8. canary | `/canary` | ⏭️ 跳过（本地 demo） | - |
+| 9. benchmark | `/benchmark` | ⏭️ 跳过 | - |
+| 10. document-release | `document-release` | ✅ | README/CHANGELOG 更新 |
+| 11. retro | `/retro` | ✅ | `RETRO-2026-04-14.md` |
+
+**铁律：任何阶段不得跳过前置阶段。**
