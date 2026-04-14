@@ -28,10 +28,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 配置 CORS 中间件 - 支持前端跨域调用
+# 配置 CORS 中间件 - 支持前端跨域调用（Important 修复：生产环境限制具体域名）
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # 前端开发服务器
+    "http://localhost:5173",  # Vite 开发服务器
+    # 生产环境应添加具体域名，如："https://ehs.yourcompany.com"
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应限制具体域名
+    allow_origins=ALLOWED_ORIGINS,  # 生产环境应限制具体域名
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,6 +111,8 @@ async def report_alert(request: AlertReportRequest):
             emergency_plans = result.get("emergency_plans", [])
         except Exception as workflow_error:
             log.warning(f"工作流执行失败，使用 Mock 数据：{workflow_error}")
+            # Critical 修复：添加监控告警（生产环境需接入告警系统）
+            log.error(f"⚠️ 工作流失败告警：{workflow_error} - 已降级到 Mock 数据")
             # 降级处理：使用 Mock 数据
             risk_assessment = {
                 "risk_level": "high" if request.alert_level >= 3 else "medium",

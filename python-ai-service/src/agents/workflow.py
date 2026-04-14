@@ -15,19 +15,21 @@ class AgentState(TypedDict):
     error: Optional[str]  # 错误信息
 
 
-def risk_perception_node(state: AgentState) -> AgentState:
+def risk_perception_node(state: AgentState, agent: Optional[RiskAgent] = None) -> AgentState:
     """
-    风险感知节点
+    风险感知节点（Important 修复：依赖注入）
 
     Args:
         state: 当前状态
+        agent: 可选的 RiskAgent 实例（依赖注入）
 
     Returns:
         更新后的状态
     """
     try:
         log.info("执行风险感知节点")
-        agent = RiskAgent()
+        if agent is None:
+            agent = RiskAgent()  # 降级：如无注入则创建
         assessment = agent.assess(state["alert_message"])
         return {
             **state,
@@ -47,12 +49,13 @@ def risk_perception_node(state: AgentState) -> AgentState:
         }
 
 
-def plan_retrieval_node(state: AgentState) -> AgentState:
+def plan_retrieval_node(state: AgentState, agent: Optional[SearchAgent] = None) -> AgentState:
     """
-    预案检索节点
+    预案检索节点（Important 修复：依赖注入）
 
     Args:
         state: 当前状态
+        agent: 可选的 SearchAgent 实例（依赖注入）
 
     Returns:
         更新后的状态
@@ -65,7 +68,9 @@ def plan_retrieval_node(state: AgentState) -> AgentState:
             log.warning("风险评估为空，跳过预案检索")
             return state
 
-        agent = SearchAgent()
+        if agent is None:
+            agent = SearchAgent()  # 降级：如无注入则创建
+
         risk_level = state["risk_assessment"].get("risk_level", "unknown")
 
         # 根据风险等级检索预案

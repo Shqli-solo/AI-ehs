@@ -1,5 +1,6 @@
 # python-ai-service/src/shared/models.py
 """Pydantic 数据模型 - 用于 API 输入验证"""
+import html
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -18,12 +19,9 @@ def validate_content(v: str, max_length: int = 2000) -> str:
         raise ValueError("内容不能为空")
     if len(v) > max_length:
         raise ValueError(f"内容长度不能超过 {max_length} 字符")
-    # 防止 XSS 注入 - 过滤危险字符
-    dangerous_chars = ['<', '>', '"', "'", '&', 'javascript:', 'onerror=', 'onclick=']
-    for char in dangerous_chars:
-        if char.lower() in v.lower():
-            raise ValueError("内容包含非法字符")
-    return v.strip()
+    # 使用 html.escape() 进行 XSS 防护（审查修复）
+    v = html.escape(v.strip())
+    return v
 
 
 def validate_level(v: int) -> int:
