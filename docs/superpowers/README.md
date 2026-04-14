@@ -53,20 +53,23 @@
 
 ### 任务依赖关系
 
-**完整流程顺序（12 个阶段）：**
+**完整流程顺序（15 个阶段）：**
 
 ```
-/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → /autoplan → writing-plans → subagent-driven-development/TDD → QA → systematic-debugging → requesting-code-review → review → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 **依赖规则：**
-- `/office-hours` 必须在项目启动时首先执行（产品创意/需求澄清）
-- `brainstorming` 必须在 `/office-hours` 后进行（需求细化）
-- `writing-plans` 必须在 `brainstorming` 完成后创建
-- `TDD` 必须在 `writing-plans` 审查通过后开始
-- `code-review` 必须在 `TDD` 完成后进行
-- `QA` 必须在 `code-review` 通过后进行
-- `/cso` 必须在 `QA` 通过后进行（安全审计）
+- `/office-hours` 必须在项目启动时首先执行（产品创意/需求澄清）→ 产出 `product-brief`
+- `brainstorming` 必须在 `/office-hours` 后进行（需求细化、方案设计）→ 产出 `design`
+- `/autoplan` 必须在 `brainstorming` 后进行（三段审查：CEO/Eng/Design）→ 产出审查报告
+- `writing-plans` 必须在 `/autoplan` 审查通过后执行（撰写最终实施计划）→ 产出 `plan.md`
+- `subagent-driven-development/TDD` 必须基于 `writing-plans` 的输出执行（任务驱动开发）→ 产出代码 + 测试
+- `QA` 必须在 TDD 完成后进行（浏览器测试、端到端验证）
+- `systematic-debugging` 在 QA 发现 bug 时执行（系统性调试修复）→ 修复 bug 后重新 QA
+- `requesting-code-review` 必须在 QA 通过后进行（代码审查）
+- `review` 必须在 `requesting-code-review` 后进行（审查修复验证）
+- `/cso` 必须在 `review` 通过后进行（安全审计）
 - `ship` 必须在 `/cso` 通过后进行（发布合并）
 - `canary` 必须在 `ship` 后进行（金丝雀发布/小流量验证）
 - `benchmark` 必须在 `canary` 后进行（性能基准测试）
@@ -75,24 +78,32 @@
 
 **铁律：任何阶段不得跳过前置阶段。**
 
+**QA 阶段 Bug 处理流程：**
+```
+QA 发现 bug → systematic-debugging 修复 → 重新 QA 验证 → 通过后进入 code-review
+```
+
 ---
 
 ## 阶段验收标准
 
 | 阶段 | 完成标准 | 产出物 |
 |------|----------|--------|
-| **0. /office-hours** | 产品创意明确、价值判断清晰 | 产品简报/需求摘要 |
-| **1. brainstorming** | 需求明确、边界清晰、用户确认 | 需求摘要（对话记录） |
-| **2. writing-plans** | 计划文档已写、`/autoplan` 审查通过 | `docs/superpowers/specs/*.md` |
-| **3. TDD** | 测试用例已写、测试全过 | 测试文件 + 实现代码 |
-| **4. code-review** | 审查通过、无 blocking issue | PR 或 git diff |
+| **0. /office-hours** | 产品创意明确、价值判断清晰 | product-brief |
+| **1. brainstorming** | 需求明确、边界清晰、方案设计完成 | design |
+| **2. /autoplan** | 三段审查通过（CEO/Eng/Design） | 审查报告 |
+| **3. writing-plans** | 计划文档已写、审查问题已修复 | plan.md |
+| **4. subagent-driven-development/TDD** | 测试用例已写、测试全过、任务完成 | 代码 + 测试 |
 | **5. QA** | `/qa` 验证通过、无 console error | QA 报告 |
-| **6. /cso** | 安全审计通过、无高危漏洞 | 安全审计报告 |
-| **7. ship** | 已合并、已发布、更新 VERSION | git commit + tag |
-| **8. canary** | 小流量验证通过、无异常告警 | Canary 监控报告 |
-| **9. benchmark** | 性能基线建立、指标达标 | 性能基准报告 |
-| **10. document-release** | 文档同步完成、CHANGELOG 更新 | README/CHANGELOG 更新 |
-| **11. retro** | 复盘报告完成、经验教训记录 | RETRO 报告 |
+| **6. systematic-debugging** | QA 发现的 bug 已修复、重新 QA 通过 | bug 修复 |
+| **7. requesting-code-review** | 审查通过、无 blocking issue | 审查意见 |
+| **8. review** | 审查修复验证通过 | review 报告 |
+| **9. /cso** | 安全审计通过、无高危漏洞 | 安全审计报告 |
+| **10. ship** | 已合并、已发布、更新 VERSION | git commit + tag |
+| **11. canary** | 小流量验证通过、无异常告警 | Canary 监控报告 |
+| **12. benchmark** | 性能基线建立、指标达标 | 性能基准报告 |
+| **13. document-release** | 文档同步完成、CHANGELOG 更新 | README/CHANGELOG 更新 |
+| **14. retro** | 复盘报告完成、经验教训记录 | RETRO 报告 |
 
 **铁律：任何阶段不得跳过前置阶段。**
 

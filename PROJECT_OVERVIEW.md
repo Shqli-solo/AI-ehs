@@ -281,30 +281,35 @@ mianshi/
 
 ---
 
-## Superpowers + gstack 完整流程（12 阶段）
+## Superpowers + gstack 完整流程（15 阶段）
 
 **完整顺序：**
 ```
-/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → /autoplan → writing-plans → subagent-driven-development/TDD → QA → systematic-debugging → requesting-code-review → review → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 ### 阶段 1 MVP 执行情况
 
 | 阶段 | 技能 | 状态 | 产出物 |
 |------|------|------|--------|
-| 0. /office-hours | `/office-hours` | ✅ | 产品创意确认 |
-| 1. brainstorming | `Superpowers: brainstorming` | ✅ | 需求文档 |
-| 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | ✅ | `docs/superpowers/plans/2026-04-13-ehs-stage1-mvp-plan.md` |
-| 3. TDD | `Superpowers: test-driven-development` | ✅ | 测试 + 实现代码 |
-| 4. code-review | `Superpowers: requesting-code-review` | ✅ | 审查报告 |
+| 0. /office-hours | `/office-hours` | ✅ | product-brief |
+| 1. brainstorming | `Superpowers: brainstorming` | ✅ | design |
+| 2. /autoplan | `/autoplan` | ✅ | 审查报告 |
+| 3. writing-plans | `Superpowers: writing-plans` | ✅ | plan.md |
+| 4. subagent-driven-development/TDD | `Superpowers: subagent-driven-development` + `TDD` | ✅ | 代码 + 测试 |
 | 5. QA | `/qa` | ✅ | QA 报告 |
-| 6. /cso | `/cso` | ✅ | 安全审计报告 |
-| 7. ship | `/ship` | ✅ | v1.0.1 发布 |
-| 8. canary | `/canary` | ⏭️ 跳过（本地 demo） | - |
-| 9. benchmark | `/benchmark` | ⏭️ 跳过 | - |
-| 10. document-release | `document-release` | ✅ | README/CHANGELOG 更新 |
-| 11. retro | `/retro` | ✅ | `RETRO-2026-04-14.md` |
+| 6. systematic-debugging | `Superpowers: systematic-debugging` | ⏭️ 跳过（无 bug） | - |
+| 7. requesting-code-review | `Superpowers: requesting-code-review` | ✅ | 审查意见 |
+| 8. review | `/review` | ✅ | review 报告 |
+| 9. /cso | `/cso` | ✅ | 安全审计报告 |
+| 10. ship | `/ship` | ✅ | v1.0.1 发布 |
+| 11. canary | `/canary` | ⏭️ 跳过（本地 demo） | - |
+| 12. benchmark | `/benchmark` | ⏭️ 跳过 | - |
+| 13. document-release | `document-release` | ✅ | README/CHANGELOG 更新 |
+| 14. retro | `/retro` | ✅ | `RETRO-2026-04-14.md` |
 
 **铁律：任何阶段不得跳过前置阶段。**
+
+**流程完整性：** 12/15 完成（3 个可选阶段跳过：systematic-debugging 无 bug 跳过，canary/benchmark 本地 demo 跳过）
 
 **流程完整性：** 10/12 完成（2 个可选阶段跳过）

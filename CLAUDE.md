@@ -19,32 +19,36 @@
 
 ## 阶段流程（完整顺序 - 超级重要）
 
-**实际执行流程（12 阶段）：**
+**实际执行流程（14 阶段）：**
 ```
-/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → /autoplan → writing-plans → subagent-driven-development/TDD → QA → systematic-debugging → requesting-code-review → review → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 **详细说明：**
 
-| 阶段 | 技能 | 说明 | 是否必须 |
-|------|------|------|----------|
-| 0. /office-hours | `/office-hours` | 产品创意、需求澄清、价值判断 | ✅ 必须 |
-| 1. brainstorming | `Superpowers: brainstorming` | 创意发散、需求细化 | ✅ 必须 |
-| 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | 撰写实施计划、多视角审查 | ✅ 必须 |
-| 3. TDD | `Superpowers: test-driven-development` | 测试驱动开发 | ✅ 必须 |
-| 4. code-review | `Superpowers: requesting-code-review` | 代码审查 | ✅ 必须 |
-| 5. QA | `/qa` 或 `/browse` | 浏览器测试、端到端验证 | ✅ 必须 |
-| 6. /cso | `/cso` | 安全审计 | ✅ 必须 |
-| 7. ship | `/ship` | 发布上线 | ✅ 必须 |
-| 8. canary | `/canary` | 金丝雀发布（小流量验证） | ⚠️ 可选 |
-| 9. benchmark | `/benchmark` | 性能基准测试 | ⚠️ 可选 |
-| 10. document-release | `document-release` | 文档同步更新 | ✅ 必须 |
-| 11. retro | `/retro` | 项目复盘 | ✅ 必须 |
+| 阶段 | 技能 | 说明 | 是否必须 | 产出物 |
+|------|------|------|----------|--------|
+| 0. /office-hours | `/office-hours` | 产品创意、需求澄清、价值判断 | ✅ 必须 | product-brief |
+| 1. brainstorming | `Superpowers: brainstorming` | 创意发散、需求细化、方案设计 | ✅ 必须 | design |
+| 2. /autoplan | `/autoplan` | 三段审查（CEO/Eng/Design） | ✅ 必须 | 审查报告 |
+| 3. writing-plans | `Superpowers: writing-plans` | 撰写最终实施计划 | ✅ 必须 | plan.md |
+| 4. subagent-driven-development/TDD | `Superpowers: subagent-driven-development` + `test-driven-development` | 基于 plan 的任务驱动开发 | ✅ 必须 | 代码 + 测试 |
+| 5. QA | `/qa` 或 `/browse` | 浏览器测试、端到端验证 | ✅ 必须 | QA 报告 |
+| 6. systematic-debugging | `Superpowers: systematic-debugging` | 若有 bug，系统性调试修复 | ⚠️ 按需 | bug 修复 |
+| 7. requesting-code-review | `Superpowers: requesting-code-review` | 代码审查 | ✅ 必须 | 审查意见 |
+| 8. review | `/review` | 审查修复验证 | ✅ 必须 | review 报告 |
+| 9. /cso | `/cso` | 安全审计 | ✅ 必须 | 安全审计报告 |
+| 10. ship | `/ship` | 发布上线 | ✅ 必须 | git commit + tag |
+| 11. canary | `/canary` | 金丝雀发布（小流量验证） | ⚠️ 可选 | Canary 监控报告 |
+| 12. benchmark | `/benchmark` | 性能基准测试 | ⚠️ 可选 | 性能基准报告 |
+| 13. document-release | `document-release` | 文档同步更新 | ✅ 必须 | README/CHANGELOG 更新 |
+| 14. retro | `/retro` | 项目复盘 | ✅ 必须 | RETRO 报告 |
 
 **铁律：**
 1. 任何阶段不得跳过前置阶段
-2. 每个阶段完成后必须通过验证门（verification gate）
-3. 发现问题必须回退到对应阶段修复
+2. QA 阶段发现 bug → 使用 `systematic-debugging` 修复 → 重新 QA
+3. 每个阶段完成后必须通过验证门（verification gate）
+4. 发现问题必须回退到对应阶段修复
 
 ## 会话启动检查
 1. `git status` → 检查未提交变更
