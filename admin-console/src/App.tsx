@@ -36,7 +36,8 @@ const AlertPage: React.FC = () => {
     });
 
     if (!response.ok) {
-      throw new Error('API 调用失败');
+      const errorText = await response.text();
+      throw new Error(`API 调用失败：${response.status} - ${errorText}`);
     }
 
     const result = await response.json();

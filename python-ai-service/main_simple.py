@@ -1,6 +1,6 @@
 """EHS AI Service - 简化版（Mock 数据但走真实 API 流程）"""
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
@@ -44,7 +44,7 @@ RISK_LEVEL_MAP = {
     "intrusion": "high",
 }
 
-# 内存存储告警列表
+# 内存存储告警列表（最大容量 100 条）
 ALERTS_STORE: List[Dict[str, Any]] = [
     {
         "id": "ALT-20260414-001",
@@ -126,6 +126,14 @@ async def health_check():
 @app.post("/api/alert/report", response_model=AlertReportResponse)
 async def report_alert(request: AlertReportRequest):
     """告警上报接口"""
+
+    # 验证告警类型白名单
+    if request.alert_type not in RISK_LEVEL_MAP:
+        raise HTTPException(
+            status_code=400,
+            detail=f"无效的告警类型：{request.alert_type}。有效值：{list(RISK_LEVEL_MAP.keys())}"
+        )
+
     print(f"\n{'='*60}")
     print(f"收到告警上报：{request.alert_type} - {request.location}")
     print(f"{'='*60}")
@@ -153,7 +161,7 @@ async def report_alert(request: AlertReportRequest):
     # 获取第一条预案名称
     plan_name = plans[0]["title"] if plans else "未知预案"
 
-    # 步骤 3: 存储告警到内存
+    # 步骤 3: 存储告警到内存（限制最大容量 100 条）
     new_alert = {
         "id": f"ALT-{alert_timestamp}",
         "type": request.alert_type,
@@ -167,7 +175,10 @@ async def report_alert(request: AlertReportRequest):
         "planName": f"《{plan_name}》"
     }
     ALERTS_STORE.insert(0, new_alert)
-    print(f"\n[Storage] 告警已存储：{new_alert['id']}")
+    # 限制容量，移除最旧的告警
+    if len(ALERTS_STORE) > 100:
+        ALERTS_STORE.pop()
+    print(f"\n[Storage] 告警已存储：{new_alert['id']} (当前容量：{len(ALERTS_STORE)}/100)")
 
     print(f"\n{'='*60}")
     print(f"告警上报完成：{alert_id}")
