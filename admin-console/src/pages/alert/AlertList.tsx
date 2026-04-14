@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Space, Typography, Empty, Button, Spin } from 'antd';
+import { Card, Table, Tag, Space, Typography, Empty, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -17,7 +17,6 @@ const { Text } = Typography;
 
 interface AlertListProps {
   refreshTrigger?: number; // 用于接收刷新信号
-  onRefresh?: () => void;
 }
 
 /**
@@ -33,7 +32,7 @@ interface AlertListProps {
  * - Empty 状态 - 空列表时显示"暂无告警"引导
  * - Error 状态 - 显示错误提示 + 重试按钮
  */
-export const AlertList: React.FC<AlertListProps> = ({ refreshTrigger, onRefresh }) => {
+export const AlertList: React.FC<AlertListProps> = ({ refreshTrigger }) => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
@@ -177,7 +176,7 @@ export const AlertList: React.FC<AlertListProps> = ({ refreshTrigger, onRefresh 
       width: 200,
       render: (planName?: string) =>
         planName ? (
-          <Text type="primary" className="cursor-pointer hover:underline">
+          <Text className="text-blue-600 cursor-pointer hover:underline">
             {planName}
           </Text>
         ) : (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ConfigProvider, Layout, theme } from 'antd';
+import { ConfigProvider, Layout } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { SimulateAlert, AlertList } from '@/pages/alert';
 import { AlertType } from '@/types/alert';
