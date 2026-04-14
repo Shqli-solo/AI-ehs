@@ -19,23 +19,29 @@ const AlertPage: React.FC = () => {
    * 处理告警上报
    */
   const handleSubmit = async (data: { alertType: AlertType; content: string }) => {
-    // 阶段 1 使用 Mock，不实际调用 API
     console.log('告警上报:', data);
 
-    // 模拟添加到列表
-    const newAlert = {
-      id: `ALT-${Date.now()}`,
-      type: data.alertType,
-      content: data.content,
-      level: 4, // Critical
-      location: '模拟位置',
-      timestamp: new Date().toISOString(),
-      status: 'pending' as const,
-      planName: '《应急预案》',
-    };
+    // 调用真实 API
+    const response = await fetch('http://localhost:8000/api/alert/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        device_id: 'DEV-001',
+        device_type: '烟雾探测器',
+        alert_type: data.alertType,
+        alert_content: data.content,
+        location: '生产车间 A 区',
+        alert_level: 4,
+      }),
+    });
 
-    // 这里应该会调用 API，然后刷新列表
-    return Promise.resolve();
+    if (!response.ok) {
+      throw new Error('API 调用失败');
+    }
+
+    const result = await response.json();
+    console.log('API 响应:', result);
+    return result;
   };
 
   /**

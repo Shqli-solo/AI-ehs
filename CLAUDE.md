@@ -29,3 +29,4 @@ brainstorming → writing-plans → TDD → code-review → QA → ship
 
 ---
 详细配置：docs/superpowers/README.md
+记住，后续所有项目的git commit,commit的消息使用中文

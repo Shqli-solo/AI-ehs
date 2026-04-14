@@ -45,12 +45,21 @@ export const AlertList: React.FC<AlertListProps> = ({ refreshTrigger, onRefresh 
     setLoading(true);
     setError(false);
     try {
-      // 阶段 1 使用 Mock 数据，模拟 API 延迟
+      // 尝试从 API 加载
+      const response = await fetch('http://localhost:8000/api/alert/list');
+      if (response.ok) {
+        const data = await response.json();
+        setAlerts(data.alerts || []);
+      } else {
+        // API 失败时使用 Mock 数据
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setAlerts(MOCK_ALERTS);
+      }
+    } catch (err) {
+      // 网络错误时使用 Mock 数据
+      console.log('API 不可用，使用 Mock 数据');
       await new Promise((resolve) => setTimeout(resolve, 500));
       setAlerts(MOCK_ALERTS);
-    } catch (err) {
-      setError(true);
-      console.error('加载告警数据失败:', err);
     } finally {
       setLoading(false);
     }
