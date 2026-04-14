@@ -19,15 +19,17 @@
 
 ## 阶段流程（完整顺序 - 超级重要）
 
+**实际执行流程（12 阶段）：**
 ```
-brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 **详细说明：**
 
 | 阶段 | 技能 | 说明 | 是否必须 |
 |------|------|------|----------|
-| 1. brainstorming | `Superpowers: brainstorming` | 创意发散、需求澄清 | ✅ 必须 |
+| 0. /office-hours | `/office-hours` | 产品创意、需求澄清、价值判断 | ✅ 必须 |
+| 1. brainstorming | `Superpowers: brainstorming` | 创意发散、需求细化 | ✅ 必须 |
 | 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | 撰写实施计划、多视角审查 | ✅ 必须 |
 | 3. TDD | `Superpowers: test-driven-development` | 测试驱动开发 | ✅ 必须 |
 | 4. code-review | `Superpowers: requesting-code-review` | 代码审查 | ✅ 必须 |

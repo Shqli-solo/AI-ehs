@@ -53,13 +53,15 @@
 
 ### 任务依赖关系
 
-**完整流程顺序（11 个阶段）：**
+**完整流程顺序（12 个阶段）：**
 
 ```
-brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 **依赖规则：**
+- `/office-hours` 必须在项目启动时首先执行（产品创意/需求澄清）
+- `brainstorming` 必须在 `/office-hours` 后进行（需求细化）
 - `writing-plans` 必须在 `brainstorming` 完成后创建
 - `TDD` 必须在 `writing-plans` 审查通过后开始
 - `code-review` 必须在 `TDD` 完成后进行
@@ -79,6 +81,7 @@ brainstorming → writing-plans → TDD → code-review → QA → /cso → ship
 
 | 阶段 | 完成标准 | 产出物 |
 |------|----------|--------|
+| **0. /office-hours** | 产品创意明确、价值判断清晰 | 产品简报/需求摘要 |
 | **1. brainstorming** | 需求明确、边界清晰、用户确认 | 需求摘要（对话记录） |
 | **2. writing-plans** | 计划文档已写、`/autoplan` 审查通过 | `docs/superpowers/specs/*.md` |
 | **3. TDD** | 测试用例已写、测试全过 | 测试文件 + 实现代码 |

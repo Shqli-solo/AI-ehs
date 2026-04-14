@@ -281,17 +281,18 @@ mianshi/
 
 ---
 
-## Superpowers + gstack 完整流程（11 阶段）
+## Superpowers + gstack 完整流程（12 阶段）
 
 **完整顺序：**
 ```
-brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
+/office-hours → brainstorming → writing-plans → TDD → code-review → QA → /cso → ship → canary → benchmark → document-release → retro
 ```
 
 ### 阶段 1 MVP 执行情况
 
 | 阶段 | 技能 | 状态 | 产出物 |
 |------|------|------|--------|
+| 0. /office-hours | `/office-hours` | ✅ | 产品创意确认 |
 | 1. brainstorming | `Superpowers: brainstorming` | ✅ | 需求文档 |
 | 2. writing-plans | `Superpowers: writing-plans` + `/autoplan` | ✅ | `docs/superpowers/plans/2026-04-13-ehs-stage1-mvp-plan.md` |
 | 3. TDD | `Superpowers: test-driven-development` | ✅ | 测试 + 实现代码 |
@@ -305,3 +306,5 @@ brainstorming → writing-plans → TDD → code-review → QA → /cso → ship
 | 11. retro | `/retro` | ✅ | `RETRO-2026-04-14.md` |
 
 **铁律：任何阶段不得跳过前置阶段。**
+
+**流程完整性：** 10/12 完成（2 个可选阶段跳过）
