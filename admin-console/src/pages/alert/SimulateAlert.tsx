@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Input, Select, Space, message } from 'antd';
-import { FireOutlined, WarningOutlined, ThermometerOutlined, AlertOutlined, SendOutlined } from '@ant-design/icons';
+import { FireOutlined, WarningOutlined, LineChartOutlined, AlertOutlined, SendOutlined } from '@ant-design/icons';
 import { PRESET_SCENARIOS, AlertType, ALERT_TYPE_MAP } from '@/types/alert';
 
 const { TextArea } = Input;
@@ -94,7 +94,7 @@ export const SimulateAlert: React.FC<SimulateAlertProps> = ({ onSubmit, onSucces
                 icon={
                   scenario.alertType === AlertType.FIRE ? <FireOutlined /> :
                   scenario.alertType === AlertType.GAS_LEAK ? <WarningOutlined /> :
-                  scenario.alertType === AlertType.TEMPERATURE_ABNORMAL ? <ThermometerOutlined /> :
+                  scenario.alertType === AlertType.TEMPERATURE_ABNORMAL ? <LineChartOutlined /> :
                   <AlertOutlined />
                 }
                 onClick={() => handlePresetClick(scenario)}
