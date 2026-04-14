@@ -2,6 +2,10 @@
 
 企业级 AI 安保决策平台，基于 GraphRAG + Multi-Agent 架构，提供智能检索、Agent 编排、LLMOps 评估等能力。
 
+**当前版本：** v1.0.1 (2026-04-14)
+
+**项目状态：** ✅ 阶段 1 MVP 完成 - 支持端到端演示
+
 ## 快速开始
 
 ### Docker Compose 启动（推荐）
@@ -63,3 +67,28 @@ mianshi/
 
 - [项目概述](PROJECT_OVERVIEW.md)
 - [超级能力配置](docs/superpowers/README.md)
+- [测试指南](测试指南.md)
+- [发布日志](CHANGELOG.md)
+- [TODOs](TODOS.md)
+
+## 变更日志
+
+### v1.0.1 (2026-04-14)
+
+**新增**
+- ✅ Docker 配置和 docker-compose.yml
+- ✅ 端到端测试验证
+- ✅ 前端告警管理页面（React + Ant Design）
+- ✅ Python FastAPI REST API
+- ✅ GraphRAG 检索引擎（ES + Milvus + Reranker）
+- ✅ Multi-Agent 编排（LangGraph）
+
+**修复**
+- ✅ TypeScript 编译错误
+- ✅ 代码审查发现的问题
+
+**下一步（阶段 2）**
+- 接入真实数据库（Elasticsearch、Milvus）
+- 替换 Mock 模型为真实 LLM
+- 完善测试覆盖（目标 80%）
+- CI/CD 流水线配置
