@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Input, Select, Space, message } from 'antd';
 import { FireOutlined, WarningOutlined, ThermometerOutlined, AlertOutlined, SendOutlined } from '@ant-design/icons';
-import type { MessageInstance } from 'antd/es/message/interface';
 import { PRESET_SCENARIOS, AlertType, ALERT_TYPE_MAP } from '@/types/alert';
 
 const { TextArea } = Input;
