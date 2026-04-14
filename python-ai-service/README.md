@@ -9,13 +9,32 @@
 
 ## 快速开始
 
-### 安装依赖
+### 方式一：Docker Compose 启动（推荐）
+
 ```bash
-pip install -r requirements.txt
+# 复制配置模板
+cp .env.example .env
+
+# 启动所有服务（Elasticsearch + Milvus + AI Service）
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
 ```
 
-### 运行服务
+### 方式二：本地开发
+
 ```bash
+# 复制配置模板
+cp .env.example .env
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行服务
 uvicorn src.api.rest:app --reload --host 0.0.0.0 --port 8000
 ```
 
