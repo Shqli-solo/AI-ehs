@@ -577,38 +577,180 @@ jobs:
 
 ---
 
-## 8. 监控与可观测性
+## 8. LLMOps + MLOps 完整体系
 
-### 8.1 Prometheus 指标
+### 8.1 LLMOps 评估体系
 
-**基础指标：**
-- CPU/Memory 使用率
-- 请求 QPS
-- 响应时间（P50/P95/P99）
-- 错误率
+| 评估维度 | 工具 | 指标 | 用途 |
+|---------|------|------|------|
+| **RAG 质量** | Ragas + MLflow LLM Evaluate | Faithfulness, Context Precision, Groundedness | 无参考评估 + 内置 RAG 指标 |
+| **Agent 质量** | AgentEvals | 任务完成率、轨迹合理性、工具使用效率 | 生产环境轨迹评估 |
+| **模型性能** | 自定义评估脚本 | Accuracy, Precision, Recall, F1 | 微调模型质量 |
+| **线上监控** | Prometheus + Grafana | P99 延迟、Token 消耗、错误率 | 实时性能监控 |
+| **人工反馈** | RLHF 数据收集 | 用户满意度、thumbs up/down | 持续优化信号 |
+| **A/B 测试** | 多模型对比 | 不同模型/Prompt 的效果差异 | 版本迭代决策 |
+| **对抗测试** | Prompt 注入测试 | 安全性、鲁棒性 | 安全边界验证 |
 
-**业务指标：**
-- 告警数量/类型分布
-- 预案检索命中率
-- Agent 执行成功率
+**MLflow LLM Evaluate 集成：**
+- 内置 RAG 指标：retrieval relevance, groundedness, context sufficiency
+- 实验追踪：记录训练参数、指标
+- 模型注册：版本管理、阶段切换（Staging → Production）
 
-**LLM 指标：**
-- Token 消耗量
-- LLM 响应时间
-- RAG 评估分数
+### 8.2 MLOps 完整流程
 
-### 8.2 Grafana Dashboard
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MLOps 数据飞轮                                │
+└─────────────────────────────────────────────────────────────────┘
 
-- 系统概览 Dashboard
-- 告警管理 Dashboard
-- 模型性能 Dashboard
-- RAG 质量 Dashboard
+数据准备 → 模型训练 → 模型评估 → 模型注册 → 模型部署 → 模型监控
+   │                                              │
+   │         ▲                                    │
+   │         │         用户反馈 (thumbs down)     │
+   └─────────┴──────────────┬─────────────────────┘
+                            │
+                            ▼
+                   ┌────────────────┐
+                   │  自动触发评估   │
+                   │ (AgentEvals +  │
+                   │    Ragas)      │
+                   └────────┬───────┘
+                            │
+                            ▼
+                   ┌────────────────┐
+                   │ autoResearch   │
+                   │ Prompt 自进化   │
+                   └────────┬───────┘
+                            │
+                            ▼
+                   ┌────────────────┐
+                   │  A/B 测试验证   │
+                   │  通过→部署      │
+                   │  失败→回滚      │
+                   └────────┬───────┘
+                            │
+                            ▼
+                   用户反馈收集 (循环闭合)
+```
 
-### 8.3 LangFuse 链路追踪
+**MLOps 工具链：**
 
-- 完整 LLM 调用链路
-- Token 消耗追踪
-- 成本分析
+| 环节 | 工具 | 用途 |
+|------|------|------|
+| 实验追踪 | MLflow | 记录训练参数、指标、超参数搜索 |
+| 模型注册 | MLflow Model Registry | 版本管理、阶段切换（None→Staging→Production） |
+| 模型部署 | vLLM / TensorRT Serving | 高性能推理服务 |
+| 模型监控 | Prometheus + Evidently AI | 数据漂移、性能下降检测 |
+| 持续训练 | GitHub Actions + DVC | 数据版本控制 + 自动重训练 |
+
+**CI/CD 触发条件：**
+- 新数据积累到阈值（如 100 条新反馈）→ 触发自动评估
+- 评估分数低于阈值（如 Faithfulness < 0.9）→ 触发优化流程
+- 优化完成 → 触发 A/B 验证 + 自动部署
+
+### 8.3 Agent 评估方法论
+
+**AgentEvals 集成方案：**
+
+```python
+from agentevals import AgentEvaluator
+
+# 1. 定义评估任务
+evaluator = AgentEvaluator(
+    task_name="EHS 预案检索",
+    expected_trajectory=[
+        "parse_alert",
+        "assess_risk",
+        "search_policies",
+        "rank_results",
+        "format_response"
+    ]
+)
+
+# 2. 评估 Agent 轨迹
+result = evaluator.evaluate(agent_trajectory)
+
+# 3. 输出指标
+print(f"任务完成率：{result.task_completion_rate}")
+print(f"轨迹合理性：{result.trajectory_score}")
+print(f"工具使用效率：{result.tool_efficiency}")
+```
+
+**评估指标：**
+
+| 方法 | 工具 | 指标 | 频率 |
+|------|------|------|------|
+| **任务完成率** | AgentEvals | 成功完成的任务 / 总任务 | 实时 |
+| **轨迹评估** | AgentEvals | 步骤合理性、工具使用效率 | 实时 |
+| **人工评估** | RLHF | 专家打分、偏好排序 | 每周 |
+| **对抗测试** | Prompt 注入测试 | 安全性、鲁棒性 | 每月 |
+
+### 8.4 autoResearch 轻量集成（Prompt 自进化）
+
+**卡神 (Andrej Karpathy) autoResearch 核心思想：**
+- 630 行代码，自主实验循环
+- 5 分钟训练周期，单一评估指标，自动决策
+- 让 AI 自主决定下一个优化方向
+
+**EHS 场景集成方案：**
+
+```python
+# autoResearch 轻量级集成 - Prompt 自进化
+def prompt_evolution_loop():
+    # 1. 收集失败案例（thumbs down）
+    failed_cases = collect_failed_interactions(threshold=0.7)
+    
+    # 2. autoResearch 分析并生成优化策略
+    analysis = autoresearch.analyze(
+        cases=failed_cases,
+        metric="user_satisfaction"
+    )
+    
+    # 3. 生成新 Prompt
+    new_prompt = autoresearch.generate_prompt(
+        analysis=analysis,
+        current_prompt=current_system_prompt
+    )
+    
+    # 4. A/B 测试验证
+    ab_result = ab_test(
+        control_prompt=current_system_prompt,
+        variant_prompt=new_prompt,
+        traffic_split=0.1  # 10% 流量
+    )
+    
+    # 5. 通过则部署，失败则回滚
+    if ab_result.improvement > 0.05:  # 5% 提升阈值
+        deploy_prompt(new_prompt)
+        log_improvement(ab_result)
+    else:
+        rollback_prompt()
+        log_failure(ab_result)
+```
+
+**集成复杂度：** 低（仅用于 Prompt 优化，不涉及模型训练）
+
+**简历体现：**
+- "基于 autoResearch 的 Prompt 自进化系统"
+- "自动分析失败案例 → 生成优化策略 → A/B 验证 → 自动部署"
+
+### 8.5 Grafana Dashboard
+
+| Dashboard | 内容 | 受众 |
+|----------|------|------|
+| 系统概览 | CPU/Memory/QPS/错误率 | 运维 |
+| 告警管理 | 告警数量/类型分布/处置时效 | 业务 |
+| 模型性能 | 微调模型准确率/F1/漂移检测 | ML 工程师 |
+| RAG 质量 | Faithfulness/Context Precision | ML 工程师 |
+| Agent 轨迹 | 任务完成率/轨迹合理性 | 产品 + 技术 |
+| 成本分析 | Token 消耗/LLM 调用成本 | 财务 + 技术 |
+
+### 8.6 LangFuse 链路追踪
+
+- 完整 LLM 调用链路（Token 流、延迟分解）
+- Agent 轨迹可视化（步骤、工具调用）
+- RAG 检索链路（召回→重排序→生成）
+- 成本分析（按用户、按场景、按模型）
 
 ---
 
