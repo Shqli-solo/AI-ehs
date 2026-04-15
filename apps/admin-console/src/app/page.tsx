@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { riskLevelConfig, alertStatusConfig } from '@/lib/utils';
 
 /**
  * Mock 数据 - 今日告警统计
@@ -53,24 +54,6 @@ const mockRecentAlerts = [
     time: '2026-04-15 08:00:00',
   },
 ];
-
-/**
- * 风险等级配置
- */
-const riskLevelConfig = {
-  high: { label: '高风险', className: 'bg-error text-white' },
-  medium: { label: '中风险', className: 'bg-warning text-white' },
-  low: { label: '低风险', className: 'bg-success text-white' },
-};
-
-/**
- * 告警状态配置
- */
-const alertStatusConfig = {
-  pending: { label: '待处理', className: 'text-warning' },
-  processing: { label: '处理中', className: 'text-primary' },
-  resolved: { label: '已解决', className: 'text-success' },
-};
 
 /**
  * 统计卡片组件

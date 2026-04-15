@@ -11,37 +11,37 @@
 
 @layer base {
   :root {
-    // 背景色
+    /* 背景色 */
     --background: 0 0% 98%;
     --foreground: 0 0% 15%;
 
-    // 卡片
+    /* 卡片 */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 15%;
 
-    // 弹出层
+    /* 弹出层 */
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    // 主色
+    /* 主色 */
     --primary: 205 100% 55%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 205 100% 65%;
     --primary-active: 205 100% 45%;
 
-    // 次级色
+    /* 次级色 */
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 15%;
 
-    //  muted
+    /* muted */
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    // 强调色
+    /* 强调色 */
     --accent: 205 100% 96%;
     --accent-foreground: 0 0% 15%;
 
-    // 状态色
+    /* 状态色 */
     --success: 120 100% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 35 100% 55%;
@@ -49,47 +49,47 @@
     --error: 0 100% 65%;
     --error-foreground: 0 0% 100%;
 
-    // 边框和输入
+    /* 边框和输入 */
     --border: 0 0% 90%;
     --input: 0 0% 90%;
     --ring: 205 100% 55%;
 
-    // 圆角
+    /* 圆角 */
     --radius: 0.5rem;
   }
 
   .dark {
-    // 背景色
+    /* 背景色 */
     --background: 0 0% 10%;
     --foreground: 0 0% 95%;
 
-    // 卡片
+    /* 卡片 */
     --card: 0 0% 15%;
     --card-foreground: 0 0% 95%;
 
-    // 弹出层
+    /* 弹出层 */
     --popover: 0 0% 15%;
     --popover-foreground: 0 0% 95%;
 
-    // 主色
+    /* 主色 */
     --primary: 205 100% 55%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 205 100% 65%;
     --primary-active: 205 100% 45%;
 
-    // 次级色
+    /* 次级色 */
     --secondary: 0 0% 20%;
     --secondary-foreground: 0 0% 95%;
 
-    // muted
+    /* muted */
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 65%;
 
-    // 强调色
+    /* 强调色 */
     --accent: 205 100% 20%;
     --accent-foreground: 0 0% 95%;
 
-    // 状态色
+    /* 状态色 */
     --success: 120 100% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 35 100% 55%;
@@ -97,7 +97,7 @@
     --error: 0 100% 65%;
     --error-foreground: 0 0% 100%;
 
-    // 边框和输入
+    /* 边框和输入 */
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 205 100% 55%;
@@ -114,37 +114,37 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  // 无障碍：焦点可见
+  /* 无障碍：焦点可见 */
   *:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
 
-  // 键盘导航：跳过链接
+  /* 键盘导航：跳过链接 */
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-button;
   }
 }
 
 @layer components {
-  // 卡片组件
+  /* 卡片组件 */
   .card {
     @apply bg-card rounded-card shadow-card border border-border p-6;
   }
 
-  // 按钮基础样式
+  /* 按钮基础样式 */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-button text-body font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
-  // 徽章组件
+  /* 徽章组件 */
   .badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-badge text-caption font-medium;
   }
 }
 
 @layer utilities {
-  // 响应式工具类
+  /* 响应式工具类 */
   .mobile-only {
     @apply block tablet:hidden desktop:hidden;
   }
@@ -157,7 +157,7 @@
     @apply hidden tablet:hidden desktop:block;
   }
 
-  // 对比度工具类（WCAG 2.1 AA 合规）
+  /* 对比度工具类（WCAG 2.1 AA 合规） */
   .contrast-high {
     @apply text-foreground;
   }
@@ -166,7 +166,7 @@
     @apply text-muted-foreground;
   }
 
-  // 骨架屏加载动画
+  /* 骨架屏加载动画 */
   .skeleton {
     @apply animate-pulse bg-muted;
   }
