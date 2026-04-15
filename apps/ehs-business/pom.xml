@@ -31,6 +31,7 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- COLA Framework BOM -->
             <dependency>
                 <groupId>com.aliyun.cola</groupId>
                 <artifactId>cola-bom</artifactId>
@@ -38,6 +39,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Spring Cloud Alibaba 依赖可按需添加 -->
         </dependencies>
     </dependencyManagement>
 

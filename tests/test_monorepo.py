@@ -6,6 +6,7 @@ EHS Monorepo - 项目骨架验证测试
 
 import os
 import json
+import sys
 import xml.etree.ElementTree as ET
 import tomllib
 from pathlib import Path
@@ -163,6 +164,7 @@ class TestScripts:
         setup_script = PROJECT_ROOT / "scripts" / "setup.sh"
         assert setup_script.exists(), "scripts/setup.sh 不存在"
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use Unix executable permission bits")
     def test_setup_script_executable(self):
         """验证 setup.sh 可执行"""
         setup_script = PROJECT_ROOT / "scripts" / "setup.sh"
@@ -173,6 +175,7 @@ class TestScripts:
         run_tests_script = PROJECT_ROOT / "scripts" / "run-tests.sh"
         assert run_tests_script.exists(), "scripts/run-tests.sh 不存在"
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use Unix executable permission bits")
     def test_run_tests_script_executable(self):
         """验证 run-tests.sh 可执行"""
         run_tests_script = PROJECT_ROOT / "scripts" / "run-tests.sh"

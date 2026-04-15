@@ -78,7 +78,12 @@ check_prerequisites() {
     else
         print_error "Poetry not found. Installing..."
         if [[ "$IS_WINDOWS" == true ]]; then
-            print_info "Please install Poetry manually: (Invoke-WebRequest -Uri https://install.python-poetry.org | Invoke-Expression)"
+            print_info "Windows detected. Please install Poetry using one of these methods:"
+            print_info "  Method 1 (using pip): pip install poetry"
+            print_info "  Method 2 (PowerShell): (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -"
+            print_info "  Method 3 (WSL recommended): Use WSL (Windows Subsystem for Linux) for better compatibility"
+            print_info "After installing Poetry, re-run this setup script."
+            exit 1
         else
             curl -sSL https://install.python-poetry.org | python3 -
         fi
