@@ -41,4 +41,4 @@
 - 测试指南：[测试指南.md](测试指南.md)
 - 项目概览：[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
 
-**Git 规范**: commit message 使用中文
+**Git 规范**: commit message 使用中文，github地址：https://github.com/Shqli-solo/AI-ehs

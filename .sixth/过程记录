@@ -1,1 +1,6 @@
 1、开启视觉伴侣来展示EHS中台整体架构全景图-》输出一个html
+
+不对，流程不对，先是office-hours产出product 
+  brief,然后是brainstom，输出design,然后是/autoplan三段审查，最后输出最终的plan,然后是基于plan的writing-plans,
+  然后是基于write-plan的输出做subagent-driven,TDD,然后就是/qa,若有bug，应该是使用systemic-debugging,然后是requesting-code-review
+  ,然后是review,然后就是/cso，然后是/ship,canary,benchmark,然后是document-release,最后就是retro

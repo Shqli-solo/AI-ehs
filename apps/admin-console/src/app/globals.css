@@ -44,10 +44,20 @@
     /* 状态色 */
     --success: 120 100% 45%;
     --success-foreground: 0 0% 100%;
+    --success-light: 120 100% 55%;
+    --success-dark: 120 100% 35%;
     --warning: 35 100% 55%;
     --warning-foreground: 0 0% 100%;
+    --warning-light: 35 100% 65%;
+    --warning-dark: 35 100% 45%;
     --error: 0 100% 65%;
     --error-foreground: 0 0% 100%;
+    --error-light: 0 100% 75%;
+    --error-dark: 0 100% 55%;
+    --info: 205 100% 55%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 205 100% 65%;
+    --info-dark: 205 100% 45%;
 
     /* 边框和输入 */
     --border: 0 0% 90%;
@@ -92,10 +102,20 @@
     /* 状态色 */
     --success: 120 100% 45%;
     --success-foreground: 0 0% 100%;
+    --success-light: 120 100% 55%;
+    --success-dark: 120 100% 35%;
     --warning: 35 100% 55%;
     --warning-foreground: 0 0% 100%;
+    --warning-light: 35 100% 65%;
+    --warning-dark: 35 100% 45%;
     --error: 0 100% 65%;
     --error-foreground: 0 0% 100%;
+    --error-light: 0 100% 75%;
+    --error-dark: 0 100% 55%;
+    --info: 205 100% 55%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 205 100% 65%;
+    --info-dark: 205 100% 45%;
 
     /* 边框和输入 */
     --border: 0 0% 20%;

@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { riskLevelConfig, alertStatusConfig } from '@/lib/utils';
 
 /**
@@ -210,6 +212,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [stats, setStats] = React.useState<typeof mockTodayStats | null>(null);
+  const { toast } = useToast();
 
   // 模拟数据加载
   React.useEffect(() => {
@@ -229,6 +232,38 @@ export default function DashboardPage() {
       setStats(mockTodayStats);
       setIsLoading(false);
     }, 1000);
+  };
+
+  const handleShowSuccessToast = () => {
+    toast({
+      variant: "success",
+      title: "操作成功",
+      description: "数据已成功保存",
+    });
+  };
+
+  const handleShowErrorToast = () => {
+    toast({
+      variant: "destructive",
+      title: "操作失败",
+      description: "保存数据时发生错误",
+    });
+  };
+
+  const handleShowInfoToast = () => {
+    toast({
+      variant: "info",
+      title: "提示信息",
+      description: "系统正在运行中",
+    });
+  };
+
+  const handleShowWarningToast = () => {
+    toast({
+      variant: "warning",
+      title: "警告提示",
+      description: "请注意潜在风险",
+    });
   };
 
   if (error) {
@@ -366,7 +401,32 @@ export default function DashboardPage() {
             <AlertList alerts={mockRecentAlerts} />
           )}
         </div>
+
+        {/* Toast 演示区域 */}
+        <div className="bg-card rounded-card shadow-card border border-border p-6">
+          <h3 className="text-title font-semibold text-foreground mb-4">
+            Toast 组件演示
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleShowSuccessToast} variant="default">
+              ✅ 成功 Toast
+            </Button>
+            <Button onClick={handleShowErrorToast} variant="destructive">
+              ❌ 错误 Toast
+            </Button>
+            <Button onClick={handleShowInfoToast} variant="outline">
+              ℹ️ 信息 Toast
+            </Button>
+            <Button onClick={handleShowWarningToast} variant="warning">
+              ⚠️ 警告 Toast
+            </Button>
+          </div>
+          <p className="text-caption text-muted-foreground mt-4">
+            点击按钮查看不同类型的 Toast 通知，3 秒后自动消失
+          </p>
+        </div>
       </main>
+      <Toaster />
     </div>
   );
 }
