@@ -1,0 +1,30 @@
+{
+  "name": "ehs-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "description": "EHS 智能安保决策中台 - Monorepo 架构",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/admin-console",
+    "build": "npm run build --workspace=apps/admin-console",
+    "start": "npm run start --workspace=apps/admin-console",
+    "lint": "npm run lint --workspace=apps/admin-console",
+    "test": "npm run test --workspace=apps/admin-console",
+    "test:watch": "npm run test:watch --workspace=apps/admin-console",
+    "test:coverage": "npm run test:coverage --workspace=apps/admin-console",
+    "typecheck": "npm run typecheck --workspace=apps/admin-console",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
+    "dev:backend": "cd apps/ehs-ai && poetry run uvicorn src.api.rest:app --reload --host 0.0.0.0 --port 8000",
+    "setup": "./scripts/setup.sh",
+    "test:all": "./scripts/run-tests.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "engineStrict": true
+}
