@@ -25,6 +25,9 @@ class ContainerConfig:
     # Reranker
     reranker_model: str = "BAAI/bge-reranker-base"
 
+    # Knowledge Graph
+    knowledge_graph_path: str = ""
+
 
 class DIContainer:
     """
@@ -90,12 +93,44 @@ class DIContainer:
                     embedding_model=self._config.embedding_model
                 )
 
+                # 加载知识图谱
+                kg = self._load_knowledge_graph()
+
                 self._instances["graph_rag"] = GraphRAGCore(
                     text_storage=es_adapter,
-                    vector_storage=milvus_adapter
+                    vector_storage=milvus_adapter,
+                    knowledge_graph=kg,
                 )
 
         return self._instances["graph_rag"]
+
+    def _load_knowledge_graph(self):
+        """加载知识图谱"""
+        from src.core.graph_rag.knowledge_graph import KnowledgeGraph
+        import os
+
+        kg_path = self._config.knowledge_graph_path
+        if not kg_path:
+            # 默认路径
+            default_paths = [
+                "data/seed/knowledge_graph.json",
+                "../../data/seed/knowledge_graph.json",
+                "../../../data/seed/knowledge_graph.json",
+            ]
+            for p in default_paths:
+                if os.path.exists(p):
+                    kg_path = p
+                    break
+
+        if kg_path and os.path.exists(kg_path):
+            try:
+                kg = KnowledgeGraph(kg_path)
+                return kg
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"知识图谱加载失败: {e}")
+                return None
+        return None
 
     def get_workflow(self):
         """获取工作流实例"""
@@ -110,7 +145,7 @@ class DIContainer:
                 from src.core.agents.risk_agent import RiskAgent
                 from src.core.agents.search_agent import SearchAgent
 
-                risk_agent = RiskAgent(llm_endpoint=self._config.llm_endpoint)
+                risk_agent = RiskAgent(llm_adapter=self.get_llm_adapter())
                 search_agent = SearchAgent(graph_rag=self.get_graph_rag())
 
                 self._instances["workflow"] = create_workflow(
@@ -119,6 +154,20 @@ class DIContainer:
                 )
 
         return self._instances["workflow"]
+
+    def get_llm_adapter(self):
+        """获取 LLM 适配器实例"""
+        if "llm_adapter" not in self._instances:
+            if self._use_mock:
+                from src.core.llm.mock import MockLLMAdapter
+                self._instances["llm_adapter"] = MockLLMAdapter()
+            else:
+                from src.core.llm.ollama import OllamaAdapter
+                self._instances["llm_adapter"] = OllamaAdapter(
+                    endpoint=self._config.llm_endpoint,
+                )
+
+        return self._instances["llm_adapter"]
 
     def get_risk_agent(self):
         """获取 RiskAgent 实例"""
@@ -129,7 +178,7 @@ class DIContainer:
             else:
                 from src.core.agents.risk_agent import RiskAgent
                 self._instances["risk_agent"] = RiskAgent(
-                    llm_endpoint=self._config.llm_endpoint
+                    llm_adapter=self.get_llm_adapter()
                 )
 
         return self._instances["risk_agent"]

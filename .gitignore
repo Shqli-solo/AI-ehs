@@ -111,3 +111,10 @@ Thumbs.db
 直投*.md
 直投 -*.md
 直投.md
+
+## Claude
+.claude/scheduled_tasks.json
+.claude/projects/
+
+## Fine-tuning output
+data/fine_tune/

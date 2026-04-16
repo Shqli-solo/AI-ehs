@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # CORS - 生产环境使用环境变量配置
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://ehs.example.com"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:5173,https://ehs.example.com"
 
     # JWT 认证
     JWT_SECRET: str = "change-this-secret-in-production"

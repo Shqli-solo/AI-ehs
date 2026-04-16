@@ -1,7 +1,45 @@
-version: '3.8'
+# EHS 智能安保决策中台 - 全栈 Docker Compose
+#
+# 启动方式:
+#   docker compose up -d              # 启动所有服务
+#   docker compose up -d ollama       # 仅启动基础设施
+#   docker compose logs -f ehs-ai     # 查看日志
+#   docker compose down               # 停止所有服务
+
 services:
+  # ============================================
+  # 基础设施层
+  # ============================================
+
+  # Ollama + LLM (风险评级用 Qwen3-7B)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ehs-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Elasticsearch (BM25 文本检索)
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ehs-elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -10,21 +48,18 @@ services:
       - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  minio:
-    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/minio_data
-    command: minio server /minio_data --console-address ":9001"
-
+  # etcd (Milvus 依赖)
   etcd:
     image: quay.io/coreos/etcd:v3.5.9
+    container_name: ehs-etcd
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -32,50 +67,195 @@ services:
       - "2379:2379"
     volumes:
       - etcd_data:/etcd/data
+    restart: unless-stopped
 
+  # MinIO (多模态数据存储)
+  minio:
+    image: minio/minio:latest
+    container_name: ehs-minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Milvus Standalone (向量检索)
   milvus:
-    image: milvusdb/milvus:v2.3.6
+    image: milvusdb/milvus:v2.4.0
+    container_name: ehs-milvus
     environment:
       - ETCD_USE_HOST_MODE=true
       - ETCD_ENDPOINTS=etcd:2379
       - MINIO_ADDRESS=minio:9000
     depends_on:
-      - etcd
-      - minio
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_started
     ports:
       - "19530:19530"
       - "9091:9091"
     volumes:
       - milvus_data:/var/lib/milvus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  ehs-ai-service:
-    build: ./python-ai-service
+  # PostgreSQL (业务数据库)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ehs-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ehs}
+      - POSTGRES_USER=${POSTGRES_USER:-ehs}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ehs123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ehs}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # 应用服务层
+  # ============================================
+
+  # Python AI 服务 (FastAPI + gRPC)
+  ehs-ai:
+    build:
+      context: ./apps/ehs-ai
+      dockerfile: Dockerfile
+    container_name: ehs-ai-service
     ports:
       - "8000:8000"
+      - "50051:50051"
     environment:
       - ES_URL=http://elasticsearch:9200
-      - MILVUS_HOST=milvus
+      - ES_INDEX=ehs_plans
+      - MILVUS_URL=milvus
       - MILVUS_PORT=19530
+      - MILVUS_COLLECTION=ehs_plans
+      - LLM_ENDPOINT=http://ollama:11434/v1/chat/completions
+      - LLM_MODEL=qwen3:7b
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
+      - JWT_SECRET=${JWT_SECRET:-ehs-jwt-secret-change-in-production}
+      - AUTH_ENABLED=false
     depends_on:
-      - elasticsearch
-      - milvus
-      - minio
+      ollama:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
+  # Java 业务服务 (Spring Boot + COLA)
+  ehs-business:
+    build:
+      context: ./apps/ehs-business
+      dockerfile: Dockerfile
+    container_name: ehs-business-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ehs}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-ehs}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-ehs123}
+      - GRPC_AI_SERVICE_HOST=ehs-ai
+      - GRPC_AI_SERVICE_PORT=50051
+    depends_on:
+      ehs-ai:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # 前端管理控制台 (Next.js)
   admin-console:
-    build: ./admin-console
+    build:
+      context: ./apps/admin-console
+      dockerfile: Dockerfile
+    container_name: ehs-admin-console
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://ehs-ai:8000
     depends_on:
-      - ehs-ai-service
-    volumes:
-      - ./admin-console:/app
-      - /app/node_modules
+      - ehs-ai
+    restart: unless-stopped
+
+  # 数据导入服务 (一次性运行)
+  data-seed:
+    build:
+      context: ./apps/ehs-ai
+      dockerfile: Dockerfile
+    container_name: ehs-data-seed
+    profiles:
+      - seed
+    command: python scripts/seed_data.py
+    environment:
+      - ES_URL=http://elasticsearch:9200
+      - ES_INDEX=ehs_plans
+      - MILVUS_URL=milvus
+      - MILVUS_PORT=19530
+      - MILVUS_COLLECTION=ehs_plans
+      - LLM_ENDPOINT=http://ollama:11434/v1/chat/completions
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+      ollama:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
 volumes:
+  ollama_data:
   es_data:
-  minio_data:
   etcd_data:
+  minio_data:
   milvus_data:
+  postgres_data:

@@ -56,6 +56,15 @@ langfuse = "^2.15.0"
 # Security
 pyjwt = "^2.8.0"
 
+# Knowledge Graph
+networkx = "^3.2"
+
+# MinIO
+minio = "^7.2.0"
+
+# PostgreSQL
+psycopg2-binary = "^2.9.9"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 pytest-asyncio = "^0.23.0"

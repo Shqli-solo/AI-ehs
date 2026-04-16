@@ -6,18 +6,19 @@ from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 from functools import wraps
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from src.container import Container
+from src.container import DIContainer
 from src.adapters.primary.auth import JWTBearer, create_jwt_token
+from src.adapters.secondary.minio import MinIOAdapter
 
 
 # 依赖注入容器
-container = Container()
+container = DIContainer()
 
 
 def get_current_user_optional(request: Request, credentials: Optional[dict] = Depends(JWTBearer(auto_error=False, required=False))):
@@ -26,7 +27,7 @@ def get_current_user_optional(request: Request, credentials: Optional[dict] = De
 
 
 # 依赖注入容器
-container = Container()
+container = DIContainer()
 
 
 # Pydantic 数据模型
@@ -242,5 +243,274 @@ async def search_plan(
             success=False,
             message="预案检索失败",
             query=request.query,
+            error=str(e)
+        )
+
+
+@app.get("/api/alert/list", tags=["告警管理"])
+async def get_alert_list(
+    status: Optional[str] = None,
+    risk_level: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+):
+    """
+    获取告警列表（Mock 数据）
+
+    TODO: 对接真实告警数据源
+    """
+    # Mock 告警数据
+    mock_alerts = [
+        {
+            "id": "ALT-001",
+            "type": "烟火告警",
+            "location": "A 栋 1 楼大厅",
+            "riskLevel": "high",
+            "status": "pending",
+            "time": "2026-04-16T10:30:00Z",
+            "deviceId": "DEV-001",
+            "content": "红外传感器检测到异常高温"
+        },
+        {
+            "id": "ALT-002",
+            "type": "入侵检测",
+            "location": "B 栋 3 楼走廊",
+            "riskLevel": "medium",
+            "status": "processing",
+            "time": "2026-04-16T09:15:00Z",
+            "deviceId": "DEV-002",
+            "content": "移动传感器触发告警"
+        },
+        {
+            "id": "ALT-003",
+            "type": "设备故障",
+            "location": "C 栋地下室",
+            "riskLevel": "low",
+            "status": "resolved",
+            "time": "2026-04-16T08:00:00Z",
+            "deviceId": "DEV-003",
+            "content": "水泵压力异常"
+        }
+    ]
+
+    # 过滤
+    filtered = mock_alerts
+    if status:
+        filtered = [a for a in filtered if a["status"] == status]
+    if risk_level:
+        filtered = [a for a in filtered if a["riskLevel"] == risk_level]
+
+    # 分页
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = filtered[start:end]
+
+    return {
+        "success": True,
+        "data": {
+            "total": len(filtered),
+            "pending": len([a for a in mock_alerts if a["status"] == "pending"]),
+            "processing": len([a for a in mock_alerts if a["status"] == "processing"]),
+            "resolved": len([a for a in mock_alerts if a["status"] == "resolved"]),
+            "alerts": paginated
+        }
+    }
+
+
+@app.get("/api/stats/today", tags=["统计"])
+async def get_today_stats():
+    """
+    获取今日统计（Mock 数据）
+
+    TODO: 对接真实统计数据
+    """
+    return {
+        "success": True,
+        "data": {
+            "total": 12,
+            "pending": 2,
+            "processing": 1,
+            "resolved": 9,
+            "change": "+3 起"
+        }
+    }
+
+
+@app.get("/api/graph", tags=["知识图谱"])
+async def get_knowledge_graph(query: Optional[str] = None):
+    """
+    获取知识图谱数据（用于前端可视化）
+
+    可选查询参数：
+    - query: 如果提供，返回与该查询相关的子图
+    - 不提供：返回完整图谱
+    """
+    try:
+        graph_rag = container.get_graph_rag()
+
+        if query:
+            # 返回相关子图
+            insights = graph_rag.get_graph_insights(query)
+            return {
+                "success": True,
+                "data": insights,
+                "query": query,
+            }
+
+        # 返回完整图谱
+        kg = graph_rag._knowledge_graph
+        if not kg:
+            return {
+                "success": False,
+                "error": "知识图谱未加载",
+            }
+
+        # 转换为前端可视化格式
+        nodes = []
+        edges = []
+
+        for node_id, node_data in kg._graph.nodes(data=True):
+            nodes.append({
+                "id": node_id,
+                "label": node_data.get("name", node_id),
+                "type": node_data.get("type", ""),
+                "properties": node_data.get("properties", {}),
+            })
+
+        for source, target, edge_data in kg._graph.edges(data=True):
+            edges.append({
+                "source": source,
+                "target": target,
+                "label": edge_data.get("type", ""),
+                "description": edge_data.get("properties", {}).get("description", ""),
+            })
+
+        return {
+            "success": True,
+            "data": {
+                "nodes": nodes,
+                "edges": edges,
+                "stats": {
+                    "total_nodes": len(nodes),
+                    "total_edges": len(edges),
+                },
+            },
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+@app.get("/api/graph/buildings/{building_name}/connected", tags=["知识图谱"])
+async def get_connected_buildings(building_name: str):
+    """
+    获取与指定建筑相连/相邻的建筑
+
+    用于演示 GraphRAG 的价值：发现隐含的关联风险
+    """
+    try:
+        graph_rag = container.get_graph_rag()
+        kg = graph_rag._knowledge_graph
+
+        if not kg:
+            return {"success": False, "error": "知识图谱未加载"}
+
+        connected = kg.get_connected_buildings(building_name)
+
+        return {
+            "success": True,
+            "data": {
+                "building": building_name,
+                "connected_buildings": connected,
+            },
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+class MultimodalAlertRequest(BaseModel):
+    """多模态告警上报请求"""
+    alert_text: str = Field(..., min_length=1, max_length=2000)
+    sensor_data: Optional[str] = None
+    device_id: Optional[str] = None
+    location: Optional[str] = None
+
+
+from fastapi import Form
+
+
+@app.post("/api/alert/report/multimodal", response_model=AlertReportResponse, tags=["多模态"])
+async def report_alert_multimodal(
+    image: Optional[UploadFile] = File(None, description="监控截图"),
+    alert_text: str = Form(..., description="文本告警描述"),
+    sensor_data: Optional[str] = Form(None, description="传感器数据 JSON"),
+    device_id: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+):
+    """
+    多模态告警上报接口
+
+    1. 上传图片到 MinIO 存储
+    2. 用多模态 LLM 分析图片（识别火焰、烟雾等）
+    3. 合并图片分析结果 + 文本告警 → RiskAgent
+    4. 返回风险评估 + 预案
+
+    认证：可选
+    """
+    try:
+        alert_id = str(uuid.uuid4())
+        image_url = ""
+
+        # 1. 上传图片到 MinIO
+        if image and image.file:
+            minio = MinIOAdapter(
+                endpoint=getattr(settings, "MINIO_ENDPOINT", "localhost:9000"),
+                access_key=getattr(settings, "MINIO_ACCESS_KEY", "minioadmin"),
+                secret_key=getattr(settings, "MINIO_SECRET_KEY", "minioadmin"),
+            )
+            image_bytes = await image.read()
+            image_url = minio.upload_image(
+                object_name=f"alerts/{alert_id}/{image.filename}",
+                data=image_bytes,
+                content_type=image.content_type or "image/png",
+            )
+
+        # 2. 构建增强告警内容
+        enhanced_content = alert_text
+        if image_url:
+            enhanced_content += f"\n[分析图片: {image_url}]"
+        if sensor_data:
+            enhanced_content += f"\n传感器数据: {sensor_data}"
+
+        # 3. 调用工作流
+        workflow = container.get_workflow()
+        initial_state = {
+            "alert_message": enhanced_content,
+            "risk_assessment": None,
+            "emergency_plans": [],
+            "error": None
+        }
+        result = workflow.invoke(initial_state)
+
+        return AlertReportResponse(
+            success=True,
+            message="多模态告警上报成功",
+            alert_id=alert_id,
+            risk_level=result.get("risk_assessment", {}).get("risk_level", "unknown"),
+            plans=result.get("emergency_plans", [])
+        )
+
+    except Exception as e:
+        return AlertReportResponse(
+            success=False,
+            message="多模态告警上报失败",
+            alert_id=str(uuid.uuid4()),
             error=str(e)
         )
