@@ -1,7 +1,7 @@
 # apps/ehs-ai/src/core/config.py
 """配置管理"""
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -32,6 +32,21 @@ class Settings(BaseSettings):
 
     # 日志
     LOG_LEVEL: str = "INFO"
+
+    # CORS - 生产环境使用环境变量配置
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://ehs.example.com"
+
+    # JWT 认证
+    JWT_SECRET: str = "change-this-secret-in-production"
+    JWT_EXPIRATION_MINUTES: int = 60
+
+    # 认证开关（开发环境可关闭认证）
+    AUTH_ENABLED: bool = True
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """解析 CORS 来源列表"""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
