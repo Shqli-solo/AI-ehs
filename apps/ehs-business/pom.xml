@@ -24,34 +24,50 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cola.version>4.4.0</cola.version>
-        <grpc.version>1.62.0</grpc.version>
+        <cola.version>5.0.0</cola.version>
+        <grpc.version>1.61.0</grpc.version>
         <protobuf.version>3.25.3</protobuf.version>
     </properties>
+
+    <!-- 添加 Maven 仓库 -->
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
             <!-- COLA Framework BOM -->
             <dependency>
-                <groupId>com.aliyun.cola</groupId>
-                <artifactId>cola-bom</artifactId>
+                <groupId>com.alibaba.cola</groupId>
+                <artifactId>cola-components-bom</artifactId>
                 <version>${cola.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Spring Cloud Alibaba 依赖可按需添加 -->
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <!-- COLA Framework -->
+        <!-- COLA Framework Components -->
         <dependency>
-            <groupId>com.aliyun.cola</groupId>
-            <artifactId>cola-core</artifactId>
+            <groupId>com.alibaba.cola</groupId>
+            <artifactId>cola-component-dto</artifactId>
+            <version>${cola.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.aliyun.cola</groupId>
-            <artifactId>cola-framework</artifactId>
+            <groupId>com.alibaba.cola</groupId>
+            <artifactId>cola-component-exception</artifactId>
+            <version>${cola.version}</version>
         </dependency>
 
         <!-- Spring Boot -->
@@ -90,6 +106,17 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- JWT & Security -->
+        <dependency>
+            <groupId>org.bitbucket.b_c</groupId>
+            <artifactId>jose4j</artifactId>
+            <version>0.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- Lombok -->
