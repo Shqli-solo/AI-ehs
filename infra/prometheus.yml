@@ -1,0 +1,52 @@
+# Prometheus 配置文件
+# 用于收集 EHS 系统各服务的监控指标
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 告警规则配置
+rule_files:
+  # - "first_rules.yml"
+
+# 告警管理器配置
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# 数据抓取配置
+scrape_configs:
+  # Prometheus 自监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Python AI 服务
+  - job_name: 'ehs-ai-service'
+    static_configs:
+      - targets: ['ehs-ai-service:9092']
+    metrics_path: '/metrics'
+
+  # Java 业务服务 (Spring Boot Actuator)
+  - job_name: 'ehs-business-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ehs-business-service:8080']
+
+  # Elasticsearch
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+
+  # Milvus
+  - job_name: 'milvus'
+    static_configs:
+      - targets: ['milvus:9091']
+
+  # MinIO
+  - job_name: 'minio'
+    metrics_path: '/minio/v2/metrics/cluster'
+    static_configs:
+      - targets: ['minio:9000']

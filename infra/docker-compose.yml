@@ -1,0 +1,269 @@
+# EHS 智能安保决策中台 - Docker Compose 配置
+# 一键启动所有服务：docker-compose -f infra/docker-compose.yml up -d
+
+version: '3.8'
+
+services:
+  # ==================== 基础设施服务 ====================
+
+  # Elasticsearch 8.x - 文档检索引擎
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ehs-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - ehs_es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ehs-network
+
+  # MinIO - 对象存储（兼容 S3）
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: ehs-minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ehs_minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ehs-network
+
+  # Etcd - Milvus 依赖
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: ehs-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+    ports:
+      - "2379:2379"
+    volumes:
+      - ehs_etcd_data:/etcd/data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ehs-network
+
+  # Milvus 2.x - 向量数据库
+  milvus:
+    image: milvusdb/milvus:v2.3.6
+    container_name: ehs-milvus
+    environment:
+      - ETCD_USE_HOST_MODE=true
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+    depends_on:
+      - etcd
+      - minio
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - ehs_milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ehs-network
+
+  # PostgreSQL - Java 业务服务数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: ehs-postgres
+    environment:
+      - POSTGRES_USER=ehs
+      - POSTGRES_PASSWORD=ehs_password
+      - POSTGRES_DB=ehs_business
+    ports:
+      - "5432:5432"
+    volumes:
+      - ehs_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ehs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ehs-network
+
+  # Prometheus - 监控指标收集
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: ehs-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ehs_prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - ehs-ai-service
+      - ehs-business-service
+    networks:
+      - ehs-network
+
+  # Grafana - 监控仪表盘
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: ehs-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3001:3001"
+    volumes:
+      - ehs_grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - ehs-network
+
+  # ==================== 应用服务 ====================
+
+  # Python AI 服务 (FastAPI + LangGraph + GraphRAG)
+  ehs-ai-service:
+    build:
+      context: ..
+      dockerfile: infra/docker/ehs-ai/Dockerfile
+    container_name: ehs-ai-service
+    ports:
+      - "8000:8000"
+      - "9092:9092"
+    environment:
+      # 基础配置
+      - APP_ENV=development
+      - LOG_LEVEL=INFO
+      # 外部依赖
+      - ES_URL=http://elasticsearch:9200
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - DATABASE_URL=postgresql://ehs:ehs_password@postgres:5432/ehs_business
+      # LLM 配置（实际使用需设置真实密钥）
+      - OPENAI_API_KEY=sk-placeholder
+      - OPENAI_BASE_URL=https://api.openai.com/v1
+      # 监控
+      - PROMETHEUS_PORT=9092
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../apps/ehs-ai:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ehs-network
+
+  # Java 业务服务 (Spring Boot + COLA + gRPC)
+  ehs-business-service:
+    build:
+      context: ..
+      dockerfile: infra/docker/ehs-business/Dockerfile
+    container_name: ehs-business-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring 配置
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ehs_business
+      - SPRING_DATASOURCE_USERNAME=ehs
+      - SPRING_DATASOURCE_PASSWORD=ehs_password
+      # gRPC 配置
+      - GRPC_EHS_AI_HOST=ehs-ai-service
+      - GRPC_EHS_AI_PORT=8000
+      # JWT 配置
+      - JWT_SECRET=ehs-jwt-secret-placeholder-change-in-production
+      - JWT_EXPIRATION=3600000
+    depends_on:
+      - postgres
+      - ehs-ai-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ehs-network
+
+  # 前端管理控制台 (Next.js 14)
+  admin-console:
+    build:
+      context: ..
+      dockerfile: infra/docker/admin-console/Dockerfile
+    container_name: ehs-admin-console
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=development
+    depends_on:
+      - ehs-ai-service
+      - ehs-business-service
+    volumes:
+      - ../apps/admin-console:/app
+      - /app/node_modules
+    networks:
+      - ehs-network
+
+# 定义网络
+networks:
+  ehs-network:
+    driver: bridge
+
+# 定义持久化卷
+volumes:
+  ehs_es_data:
+    driver: local
+  ehs_minio_data:
+    driver: local
+  ehs_etcd_data:
+    driver: local
+  ehs_milvus_data:
+    driver: local
+  ehs_pg_data:
+    driver: local
+  ehs_prometheus_data:
+    driver: local
+  ehs_grafana_data:
+    driver: local

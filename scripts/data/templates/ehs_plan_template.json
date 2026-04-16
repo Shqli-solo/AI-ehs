@@ -1,0 +1,146 @@
+{
+  "_description": "EHS 预案数据模板 - 用于 LLM 生成和人工校验",
+  "_version": "1.0.0",
+  "_schema": {
+    "type": "object",
+    "required": ["id", "title", "event_type", "risk_level", "content", "actions"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "预案唯一标识符",
+        "pattern": "^PLAN-[0-9]{4}$"
+      },
+      "title": {
+        "type": "string",
+        "description": "预案标题",
+        "minLength": 5,
+        "maxLength": 100
+      },
+      "event_type": {
+        "type": "string",
+        "description": "事件类型",
+        "enum": ["fire", "gas_leak", "temperature_abnormal", "intrusion", "power_failure", "chemical_spill", "earthquake", "flood"]
+      },
+      "risk_level": {
+        "type": "string",
+        "description": "风险等级",
+        "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+      },
+      "content": {
+        "type": "string",
+        "description": "预案详细内容",
+        "minLength": 50,
+        "maxLength": 5000
+      },
+      "actions": {
+        "type": "array",
+        "description": "应急处置动作列表",
+        "items": {
+          "type": "object",
+          "required": ["step", "action", "role"],
+          "properties": {
+            "step": {
+              "type": "integer",
+              "description": "步骤序号",
+              "minimum": 1
+            },
+            "action": {
+              "type": "string",
+              "description": "具体动作描述",
+              "minLength": 10,
+              "maxLength": 500
+            },
+            "role": {
+              "type": "string",
+              "description": "执行角色",
+              "minLength": 2,
+              "maxLength": 50
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "description": "建议完成时间 (秒)",
+              "minimum": 1
+            }
+          }
+        },
+        "minItems": 3
+      },
+      "contacts": {
+        "type": "array",
+        "description": "紧急联系人列表",
+        "items": {
+          "type": "object",
+          "required": ["name", "role", "phone"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "联系人姓名"
+            },
+            "role": {
+              "type": "string",
+              "description": "职务/角色"
+            },
+            "phone": {
+              "type": "string",
+              "description": "联系电话"
+            }
+          }
+        }
+      },
+      "resources": {
+        "type": "array",
+        "description": "所需应急资源列表",
+        "items": {
+          "type": "string"
+        }
+      },
+      "training_requirements": {
+        "type": "string",
+        "description": "培训要求",
+        "minLength": 10
+      },
+      "last_updated": {
+        "type": "string",
+        "description": "最后更新时间 (ISO 8601)",
+        "format": "date-time"
+      },
+      "version": {
+        "type": "string",
+        "description": "预案版本号",
+        "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      }
+    }
+  },
+  "template": {
+    "id": "PLAN-0001",
+    "title": "示例预案标题",
+    "event_type": "fire",
+    "risk_level": "HIGH",
+    "content": "这是预案的详细内容描述...",
+    "actions": [
+      {
+        "step": 1,
+        "action": "第一步动作描述",
+        "role": "现场人员",
+        "timeout_seconds": 60
+      },
+      {
+        "step": 2,
+        "action": "第二步动作描述",
+        "role": "安全员",
+        "timeout_seconds": 120
+      }
+    ],
+    "contacts": [
+      {
+        "name": "张三",
+        "role": "安全主管",
+        "phone": "138-0000-0000"
+      }
+    ],
+    "resources": ["灭火器", "消防栓", "急救箱"],
+    "training_requirements": "所有员工需每年参加消防安全培训",
+    "last_updated": "2026-04-16T00:00:00Z",
+    "version": "1.0.0"
+  }
+}

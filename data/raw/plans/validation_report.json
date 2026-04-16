@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "timestamp": "2026-04-16T12:16:22.214840",
+  "statistics": {
+    "total_samples": 8,
+    "valid_samples": 8,
+    "error_count": 0,
+    "warning_count": 0,
+    "error_types": {},
+    "event_type_distribution": {
+      "fire": 1,
+      "gas_leak": 1,
+      "temperature_abnormal": 1,
+      "intrusion": 1,
+      "power_failure": 1,
+      "chemical_spill": 1,
+      "earthquake": 1,
+      "flood": 1
+    },
+    "risk_level_distribution": {
+      "CRITICAL": 3,
+      "MEDIUM": 2,
+      "HIGH": 3
+    }
+  },
+  "errors": [],
+  "warnings": []
+}
