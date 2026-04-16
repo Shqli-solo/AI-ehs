@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
  * Python AI 服务 gRPC 客户端 - 基础设施层
  *
  * 负责与 Python AI 服务进行 gRPC 通信
- * 预留接口，用于后续集成风险分级、指令微调等 AI 能力
+ * 用于集成风险分级、指令微调等 AI 能力
  *
- * TODO: 集成实际 gRPC 通道和 Proto 定义
+ * 注意：当前版本使用模拟实现，生产环境需配置真实 gRPC 通道
  *
  * @author EHS Team
  * @since 2026-04-16

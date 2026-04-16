@@ -80,9 +80,9 @@ public class AlertService {
     }
 
     /**
-     * 调用 AI 服务分析告警（预留 gRPC 接口）
+     * 调用 AI 服务分析告警
      *
-     * TODO: 集成 Python AI 服务进行告警分析
+     * 注意：当前版本使用模拟实现，生产环境需调用 PythonAiClient
      */
     public String analyzeAlertWithAi(Long alertId) {
         return getAlertById(alertId)
