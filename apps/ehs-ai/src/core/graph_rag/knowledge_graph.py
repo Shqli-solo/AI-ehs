@@ -282,13 +282,21 @@ class KnowledgeGraph:
 
         for entity_id, entity in self._entity_index.items():
             name = entity["name"].lower()
-            # 精确匹配
+            # 精确匹配：实体名完全出现在查询中
             if name in query_lower:
                 score = 1.0
                 matches.append((entity_id, score))
-            # 部分匹配
-            elif any(word in query_lower for word in name if len(word) > 1):
+            # 前缀匹配：查询是实体名的前缀（如 "A栋" 匹配 "A栋办公楼"）
+            elif query_lower and name.startswith(query_lower) and len(query_lower) >= 2:
+                score = 0.8
+                matches.append((entity_id, score))
+            # 部分匹配：实体名包含查询中的关键词
+            elif any(word in name for word in query_lower if len(word) > 1):
                 score = 0.5
+                matches.append((entity_id, score))
+            # 反向部分匹配：查询包含实体名的关键词
+            elif any(word in query_lower for word in name if len(word) > 1):
+                score = 0.3
                 matches.append((entity_id, score))
 
         # 按分数排序
