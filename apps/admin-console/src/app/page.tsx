@@ -5,57 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { riskLevelConfig, alertStatusConfig } from '@/lib/utils';
-
-/**
- * Mock 数据 - 今日告警统计
- */
-const mockTodayStats = {
-  total: 12,
-  pending: 5,
-  processing: 3,
-  resolved: 4,
-  change: '+2 起',
-};
-
-/**
- * Mock 数据 - 设备在线率
- */
-const mockDeviceOnlineRate = 98.5;
-
-/**
- * Mock 数据 - 安全运行天数
- */
-const mockSafeDays = 45;
-
-/**
- * Mock 数据 - 最近告警列表
- */
-const mockRecentAlerts = [
-  {
-    id: 'ALT-2026041501',
-    type: '气体泄漏',
-    location: 'A 车间 - 东区 -2 层',
-    riskLevel: 'high' as const,
-    status: 'pending' as const,
-    time: '2026-04-15 10:30:00',
-  },
-  {
-    id: 'ALT-2026041502',
-    type: '温度异常',
-    location: 'B 车间 - 西区 -1 层',
-    riskLevel: 'medium' as const,
-    status: 'processing' as const,
-    time: '2026-04-15 09:15:00',
-  },
-  {
-    id: 'ALT-2026041503',
-    type: '入侵检测',
-    location: 'C 仓库 - 北侧',
-    riskLevel: 'low' as const,
-    status: 'resolved' as const,
-    time: '2026-04-15 08:00:00',
-  },
-];
+import { api, ApiError, getErrorSummary } from '@/services/api';
+import {
+  useAlertStats,
+  useAlerts,
+  useDeviceOnlineRate,
+  useSafeDays,
+  type Alert,
+} from '@/hooks/use-alerts';
 
 /**
  * 统计卡片组件
@@ -90,7 +47,21 @@ function StatCard({
 /**
  * 告警列表组件
  */
-function AlertList({ alerts }: { alerts: typeof mockRecentAlerts }) {
+function AlertList({ alerts }: { alerts: Alert[] }) {
+  if (!alerts || alerts.length === 0) {
+    return (
+      <div className="bg-card rounded-card shadow-card border border-border p-12 text-center">
+        <div className="text-6xl mb-4">📭</div>
+        <h3 className="text-title font-semibold text-foreground mb-2">
+          暂无告警
+        </h3>
+        <p className="text-body text-muted-foreground">
+          所有系统运行正常
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-card shadow-card border border-border">
       <div className="p-4 border-b border-border">
@@ -187,15 +158,21 @@ function EmptyState() {
 /**
  * 错误状态组件
  */
-function ErrorState({ onRetry }: { onRetry: () => void }) {
+function ErrorState({
+  error,
+  onRetry
+}: {
+  error: ApiError;
+  onRetry: () => void;
+}) {
   return (
     <div className="bg-card rounded-card shadow-card border border-border p-12 text-center">
       <div className="text-6xl mb-4">⚠️</div>
       <h3 className="text-title font-semibold text-foreground mb-2">
-        加载失败
+        {error.title}
       </h3>
       <p className="text-body text-muted-foreground mb-4">
-        无法连接到服务器，请检查网络连接后重试
+        {error.message}
       </p>
       <div className="flex gap-2 justify-center">
         <Button onClick={onRetry}>重试</Button>
@@ -206,32 +183,89 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
+ * 健康检查指示器
+ */
+function HealthIndicator({
+  healthy,
+  onCheck
+}: {
+  healthy: boolean | null;
+  onCheck: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className={`inline-block w-2 h-2 rounded-full ${healthy ? 'bg-success' : 'bg-error'}`} />
+      <span className="text-muted-foreground">
+        {healthy ? '后端服务正常' : '后端服务离线'}
+      </span>
+      <Button variant="link" className="h-auto p-0 text-primary" onClick={onCheck}>
+        检查
+      </Button>
+    </div>
+  );
+}
+
+/**
  * Dashboard 首页组件
  */
 export default function DashboardPage() {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [stats, setStats] = React.useState<typeof mockTodayStats | null>(null);
   const { toast } = useToast();
 
-  // 模拟数据加载
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      // 模拟加载成功
-      setStats(mockTodayStats);
-      setIsLoading(false);
-    }, 1000);
+  // 使用真实 API Hook
+  const { data: stats, loading: statsLoading, error: statsError, refresh: refreshStats } = useAlertStats();
+  const { data: alerts, loading: alertsLoading, error: alertsError, refresh: refreshAlerts } = useAlerts({
+    autoLoad: true,
+    pageSize: 5,
+  });
+  const { rate: deviceOnlineRate, loading: deviceLoading } = useDeviceOnlineRate();
+  const { days: safeDays } = useSafeDays();
 
-    return () => clearTimeout(timer);
+  // 后端健康检查状态
+  const [backendHealthy, setBackendHealthy] = React.useState<boolean | null>(null);
+
+  // 检查后端健康状态
+  const checkHealth = React.useCallback(async () => {
+    try {
+      await api.healthCheck();
+      setBackendHealthy(true);
+    } catch {
+      setBackendHealthy(false);
+    }
   }, []);
 
+  // 初始健康检查
+  React.useEffect(() => {
+    checkHealth();
+  }, [checkHealth]);
+
+  // 显示错误 Toast
+  React.useEffect(() => {
+    if (statsError) {
+      toast({
+        variant: "destructive",
+        title: statsError.title,
+        description: getErrorSummary(statsError),
+      });
+    }
+  }, [statsError, toast]);
+
+  React.useEffect(() => {
+    if (alertsError) {
+      toast({
+        variant: "destructive",
+        title: alertsError.title,
+        description: getErrorSummary(alertsError),
+      });
+    }
+  }, [alertsError, toast]);
+
+  // 合并加载和错误状态
+  const loading = statsLoading || alertsLoading || deviceLoading;
+  const error = statsError || alertsError;
+
   const handleRetry = () => {
-    setIsLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setStats(mockTodayStats);
-      setIsLoading(false);
-    }, 1000);
+    refreshStats();
+    refreshAlerts();
   };
 
   const handleShowSuccessToast = () => {
@@ -267,7 +301,25 @@ export default function DashboardPage() {
   };
 
   if (error) {
-    return <ErrorState onRetry={handleRetry} />;
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-card border-b border-border sticky top-0 z-10">
+          <div className="flex items-center justify-between h-16 px-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🚨</span>
+              <h1 className="text-title font-semibold text-foreground">
+                EHS 智能安保决策中台
+              </h1>
+            </div>
+            <HealthIndicator healthy={backendHealthy} onCheck={checkHealth} />
+          </div>
+        </header>
+        <main className="p-6">
+          <ErrorState error={error} onRetry={handleRetry} />
+        </main>
+        <Toaster />
+      </div>
+    );
   }
 
   return (
@@ -282,6 +334,7 @@ export default function DashboardPage() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            <HealthIndicator healthy={backendHealthy} onCheck={checkHealth} />
             <div className="relative">
               <input
                 type="text"
@@ -325,7 +378,7 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {isLoading ? (
+          {(statsLoading || deviceLoading) ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -348,13 +401,13 @@ export default function DashboardPage() {
               />
               <StatCard
                 title="设备在线率"
-                value={`${mockDeviceOnlineRate}%`}
+                value={`${deviceOnlineRate ?? 0}%`}
                 subtitle="🟢 正常"
                 icon="📊"
               />
               <StatCard
                 title="安全运行天数"
-                value={mockSafeDays}
+                value={safeDays}
                 subtitle="天"
                 icon="🛡️"
               />
@@ -388,7 +441,7 @@ export default function DashboardPage() {
 
         {/* Recent Alerts */}
         <div className="mb-6">
-          {isLoading ? (
+          {alertsLoading ? (
             <div className="bg-card rounded-card shadow-card border border-border p-6 animate-pulse">
               <div className="h-6 bg-muted rounded w-32 mb-4"></div>
               <div className="space-y-3">
@@ -398,7 +451,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <AlertList alerts={mockRecentAlerts} />
+            <AlertList alerts={alerts ?? []} />
           )}
         </div>
 
