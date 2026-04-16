@@ -1,0 +1,22 @@
+apiVersion: v2
+name: ehs-platform
+description: EHS 智能安保决策中台 - Helm Chart for Kubernetes deployment
+type: application
+version: 1.0.0
+appVersion: "2.0.0"
+keywords:
+  - ehs
+  - kubernetes
+  - helm
+  - ai-platform
+maintainers:
+  - name: Shuangquan Li
+    email: li.shuangquan@example.com
+    url: https://github.com/Shqli-solo/AI-ehs
+annotations:
+  "artifacthub.io/license": "MIT"
+  "artifacthub.io/links": |
+    - name: GitHub Repository
+      url: https://github.com/Shqli-solo/AI-ehs
+    - name: Documentation
+      url: https://github.com/Shqli-solo/AI-ehs/tree/main/docs

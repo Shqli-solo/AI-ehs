@@ -1,0 +1,237 @@
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.frontend.name }}-network-policy
+  labels:
+    app.kubernetes.io/name: {{ .Values.frontend.name }}
+    app.kubernetes.io/component: frontend
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.frontend.name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 允许来自 Ingress Controller 的流量
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: {{ .Values.frontend.service.targetPort }}
+    # 允许来自同一命名空间的前端 Pod
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.frontend.name }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.frontend.service.targetPort }}
+    {{- if .Values.frontend.networkPolicy.allowedNamespaces }}
+    # 允许来自指定命名空间的流量
+    {{- range .Values.frontend.networkPolicy.allowedNamespaces }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ . }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.frontend.service.targetPort }}
+    {{- end }}
+    {{- end }}
+  egress:
+    # 允许 DNS 解析
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 允许访问后端 API 服务
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.pythonService.name }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.pythonService.service.targetPort }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.javaService.name }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.javaService.service.targetPort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.javaService.name }}-network-policy
+  labels:
+    app.kubernetes.io/name: {{ .Values.javaService.name }}
+    app.kubernetes.io/component: java-service
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.javaService.name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 允许来自前端和 Ingress 的流量
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.frontend.name }}
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: {{ .Values.javaService.service.targetPort }}
+        {{- if .Values.javaService.grpc.enabled }}
+        - protocol: TCP
+          port: {{ .Values.javaService.grpc.port }}
+        {{- end }}
+    # 允许来自监控命名空间的流量
+    {{- if .Values.javaService.networkPolicy.allowedNamespaces }}
+    {{- range .Values.javaService.networkPolicy.allowedNamespaces }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ . }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.javaService.service.targetPort }}
+    {{- end }}
+    {{- end }}
+  egress:
+    # 允许 DNS 解析
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 允许访问 Python AI 服务 (gRPC)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.pythonService.name }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.pythonService.grpc.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.pythonService.name }}-network-policy
+  labels:
+    app.kubernetes.io/name: {{ .Values.pythonService.name }}
+    app.kubernetes.io/component: python-service
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.pythonService.name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 允许来自前端、Java 服务和 Ingress 的流量
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.frontend.name }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.javaService.name }}
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: {{ .Values.pythonService.service.targetPort }}
+        {{- if .Values.pythonService.grpc.enabled }}
+        - protocol: TCP
+          port: {{ .Values.pythonService.grpc.port }}
+        {{- end }}
+    # 允许来自监控命名空间的流量
+    {{- if .Values.pythonService.networkPolicy.allowedNamespaces }}
+    {{- range .Values.pythonService.networkPolicy.allowedNamespaces }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ . }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.pythonService.service.targetPort }}
+    {{- end }}
+    {{- end }}
+  egress:
+    # 允许 DNS 解析
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 允许访问外部依赖（Elasticsearch、Milvus 等）
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: elasticsearch
+      ports:
+        - protocol: TCP
+          port: 9200
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: milvus
+      ports:
+        - protocol: TCP
+          port: 19530
+    # 允许访问 LLM API（外部）
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# 默认拒绝所有流量的 NetworkPolicy（可选）
+{{- if .Values.networkPolicy.defaultDeny }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels:
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+{{- end }}
+{{- end }}

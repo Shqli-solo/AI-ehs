@@ -1,0 +1,59 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.frontend.name }}-pdb
+  labels:
+    app.kubernetes.io/name: {{ .Values.frontend.name }}
+    app.kubernetes.io/component: frontend
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.frontend.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.frontend.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.frontend.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.frontend.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.frontend.name }}
+      {{- include "ehs-helm.selectorLabels" . | nindent 6 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.javaService.name }}-pdb
+  labels:
+    app.kubernetes.io/name: {{ .Values.javaService.name }}
+    app.kubernetes.io/component: java-service
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.javaService.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.javaService.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.javaService.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.javaService.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.javaService.name }}
+      {{- include "ehs-helm.selectorLabels" . | nindent 6 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.pythonService.name }}-pdb
+  labels:
+    app.kubernetes.io/name: {{ .Values.pythonService.name }}
+    app.kubernetes.io/component: python-service
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.pythonService.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.pythonService.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.pythonService.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.pythonService.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.pythonService.name }}
+      {{- include "ehs-helm.selectorLabels" . | nindent 6 }}

@@ -1,0 +1,19 @@
+{
+  "name": "@ehs/e2e-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EHS 智能安保决策中台 - E2E Playwright 测试",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "show-report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

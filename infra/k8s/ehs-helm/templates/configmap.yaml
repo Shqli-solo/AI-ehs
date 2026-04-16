@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ehs-helm.configMapName" . }}
+  labels:
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.configMap.appConfig }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.configMap.elasticsearch }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.configMap.milvus }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.configMap.langfuse }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

@@ -1,0 +1,159 @@
+# EHS 智能安保决策中台 - 开发环境 Values 配置
+# 适用于本地开发、集成测试环境
+
+global:
+  environment: dev
+  clusterDomain: cluster.local
+
+# 前端配置 - 开发环境
+frontend:
+  replicaCount: 1
+  image:
+    tag: "dev-latest"
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+  ingress:
+    enabled: true
+    hosts:
+      - host: ehs-dev.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+  livenessProbe:
+    initialDelaySeconds: 10
+  readinessProbe:
+    initialDelaySeconds: 5
+  podDisruptionBudget:
+    enabled: false
+
+# Java 服务配置 - 开发环境
+javaService:
+  replicaCount: 1
+  image:
+    tag: "dev-latest"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+  livenessProbe:
+    initialDelaySeconds: 30
+  readinessProbe:
+    initialDelaySeconds: 15
+  startupProbe:
+    failureThreshold: 60
+  podDisruptionBudget:
+    enabled: false
+  # 开发环境启用 debug
+  extraEnv:
+    - name: JAVA_OPTS
+      value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+  extraPorts:
+    - name: debug
+      containerPort: 5005
+
+# Python 服务配置 - 开发环境
+pythonService:
+  replicaCount: 1
+  image:
+    tag: "dev-latest"
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+  livenessProbe:
+    initialDelaySeconds: 15
+  readinessProbe:
+    initialDelaySeconds: 5
+  podDisruptionBudget:
+    enabled: false
+  # 开发环境启用 mock
+  extraEnv:
+    - name: ENABLE_MOCK_LLM
+      value: "true"
+    - name: LOG_LEVEL
+      value: "DEBUG"
+
+# 配置映射 - 开发环境
+configMap:
+  appConfig:
+    NODE_ENV: "development"
+    PYTHON_ENV: "development"
+    SPRING_PROFILES_ACTIVE: "dev"
+    LOG_LEVEL: "DEBUG"
+    ENABLE_MOCK_LLM: "true"
+    ENABLE_LANGFUSE: "false"
+
+# 密钥配置 - 开发环境（使用测试凭据）
+secrets:
+  enabled: true
+  jwtSecret: "dev-jwt-secret-key-not-for-production"
+  llmApiKey: "sk-test-key-for-development-only"
+
+# Ingress 配置 - 开发环境
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: ehs-dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: frontend
+          servicePort: 80
+        - path: /api
+          pathType: Prefix
+          serviceName: python-service
+          servicePort: 8000
+        - path: /business
+          pathType: Prefix
+          serviceName: java-service
+          servicePort: 8080
+  tls: []
+
+# 监控配置 - 开发环境（简化）
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+# 网络策略 - 开发环境（放宽限制）
+networkPolicy:
+  enabled: false
+
+# 服务账户 - 开发环境
+serviceAccount:
+  create: true
+  name: ehs-dev-service-account
+
+# 持久化存储 - 开发环境
+persistence:
+  enabled: false
+
+# 备份 - 开发环境禁用
+backup:
+  enabled: false

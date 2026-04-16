@@ -1,0 +1,449 @@
+# EHS 智能安保决策中台 - 生产环境 Values 配置
+# 适用于生产环境，高可用、高安全配置
+
+global:
+  environment: prod
+  clusterDomain: cluster.local
+  imageRegistry: "registry.example.com/ehs"
+  storageClass: "gp3-encrypted"
+
+# 前端配置 - 生产环境
+frontend:
+  replicaCount: 3
+  image:
+    tag: "1.0.0"
+    pullPolicy: Always
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    hosts:
+      - host: ehs.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: ehs-prod-tls
+        hosts:
+          - ehs.example.com
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+    maxUnavailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    allowedNamespaces:
+      - ingress-nginx
+      - monitoring
+  # 生产环境配置
+  extraEnv:
+    - name: NEXT_PUBLIC_API_URL
+      value: "https://ehs.example.com/api"
+    - name: NEXT_PUBLIC_ENV
+      value: "production"
+  # Pod 反亲和性，确保跨可用区分布
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: frontend
+            topologyKey: topology.kubernetes.io/zone
+  # 节点选择
+  nodeSelector:
+    node-type: application
+  # 容忍度
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
+
+# Java 服务配置 - 生产环境
+javaService:
+  replicaCount: 3
+  image:
+    tag: "1.0.0"
+    pullPolicy: Always
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 50
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 65
+  grpc:
+    enabled: true
+    port: 9090
+    tls:
+      enabled: true
+      secretName: java-grpc-tls
+  livenessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startupProbe:
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+    maxUnavailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    allowedNamespaces:
+      - monitoring
+      - ingress-nginx
+  # JVM 配置
+  extraEnv:
+    - name: JAVA_OPTS
+      value: "-Xms1g -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/heapdump"
+    - name: SPRING_PROFILES_ACTIVE
+      value: "prod"
+  extraVolumeMounts:
+    - name: logs
+      mountPath: /var/log
+  extraVolumes:
+    - name: logs
+      emptyDir: {}
+  # Pod 反亲和性
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: java-service
+            topologyKey: topology.kubernetes.io/zone
+  nodeSelector:
+    node-type: application
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
+
+# Python AI 服务配置 - 生产环境
+pythonService:
+  replicaCount: 3
+  image:
+    tag: "1.0.0"
+    pullPolicy: Always
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 50
+    targetMemoryUtilizationPercentage: 60
+  grpc:
+    enabled: true
+    port: 9091
+    tls:
+      enabled: true
+      secretName: python-grpc-tls
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+    maxUnavailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    allowedNamespaces:
+      - monitoring
+      - ingress-nginx
+  # 生产环境配置
+  extraEnv:
+    - name: PYTHON_ENV
+      value: "production"
+    - name: LOG_LEVEL
+      value: "INFO"
+    - name: ENABLE_MOCK_LLM
+      value: "false"
+    - name: ENABLE_LANGFUSE
+      value: "true"
+    - name: LLM_CACHE_SIZE
+      value: "1000"
+  extraVolumeMounts:
+    - name: models
+      mountPath: /app/models
+      readOnly: true
+    - name: logs
+      mountPath: /var/log
+  extraVolumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: ehs-models-pvc
+    - name: logs
+      emptyDir: {}
+  # GPU 支持（如使用 GPU 推理）
+  # gpu:
+  #   enabled: true
+  #   type: nvidia
+  #   count: 1
+  # Pod 反亲和性
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: python-service
+            topologyKey: topology.kubernetes.io/zone
+  nodeSelector:
+    node-type: ai-workload
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "ai-workload"
+      effect: "NoSchedule"
+
+# 配置映射 - 生产环境
+configMap:
+  appConfig:
+    NODE_ENV: "production"
+    PYTHON_ENV: "production"
+    SPRING_PROFILES_ACTIVE: "prod"
+    LOG_LEVEL: "WARN"
+    API_VERSION: "v1"
+    API_TIMEOUT: "30s"
+    ENABLE_MOCK_LLM: "false"
+    ENABLE_LANGFUSE: "true"
+  elasticsearch:
+    ES_HOST: "elasticsearch-master.logging"
+    ES_PORT: "9200"
+    ES_INDEX_PREFIX: "ehs-prod"
+    ES_SSL: "true"
+  milvus:
+    MILVUS_HOST: "milvus-standalone.vector"
+    MILVUS_PORT: "19530"
+    MILVUS_COLLECTION: "ehs-prod-vectors"
+    MILVUS_SSL: "true"
+  langfuse:
+    LANGFUSE_HOST: "https://langfuse.example.com"
+    LANGFUSE_PUBLIC_KEY: ""  # 通过 secrets 注入
+    LANGFUSE_SECRET_KEY: ""  # 通过 secrets 注入
+
+# 密钥配置 - 生产环境（必须通过外部密钥管理注入）
+secrets:
+  enabled: true
+  # 以下密钥应通过外部密钥管理系统注入，如 AWS Secrets Manager、HashiCorp Vault
+  # 此处仅为占位符，实际部署时必须替换
+  databasePassword: ""  # 必须通过外部密钥管理
+  esPassword: ""  # 必须通过外部密钥管理
+  milvusPassword: ""  # 必须通过外部密钥管理
+  jwtSecret: ""  # 必须通过外部密钥管理，建议使用 32+ 字符随机字符串
+  langfusePublicKey: ""  # 必须通过外部密钥管理
+  langfuseSecretKey: ""  # 必须通过外部密钥管理
+  llmApiKey: ""  # 必须通过外部密钥管理
+
+# Ingress 配置 - 生产环境
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/whitelist-source-range: ""  # 可配置 IP 白名单
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-Frame-Options "DENY" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Content-Security-Policy "default-src 'self'" always;
+  hosts:
+    - host: ehs.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: frontend
+          servicePort: 80
+        - path: /api
+          pathType: Prefix
+          serviceName: python-service
+          servicePort: 8000
+        - path: /business
+          pathType: Prefix
+          serviceName: java-service
+          servicePort: 8080
+        - path: /health
+          pathType: Prefix
+          serviceName: frontend
+          servicePort: 80
+  tls:
+    - secretName: ehs-prod-tls
+      hosts:
+        - ehs.example.com
+
+# 监控配置 - 生产环境
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+    metricRelabelings: []
+  grafanaDashboard:
+    enabled: true
+    folder: EHS Platform
+    annotations:
+      grafana_folder: EHS Platform
+  alertmanager:
+    enabled: true
+    config:
+      route:
+        receiver: 'pagerduty-critical'
+        group_by: ['alertname', 'severity', 'service']
+        group_wait: 10s
+        group_interval: 1m
+        repeat_interval: 1h
+      receivers:
+        - name: 'pagerduty-critical'
+          pagerduty_configs:
+            - service_key: ""  # 通过外部密钥管理
+              severity: critical
+        - name: 'slack-notifications'
+          slack_configs:
+            - channel: '#ehs-alerts-prod'
+              send_resolved: true
+              api_url: ""  # 通过外部密钥管理
+      inhibit_rules:
+        - source_match:
+            severity: 'critical'
+          target_match:
+            severity: 'warning'
+          equal: ['alertname', 'service']
+
+# 网络策略 - 生产环境（严格限制）
+networkPolicy:
+  enabled: true
+  defaultDeny: true
+  allowDns: true
+  allowHealthChecks: true
+
+# Pod 安全策略 - 生产环境（严格）
+podSecurity:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+# 服务账户配置 - 生产环境
+serviceAccount:
+  create: true
+  name: ehs-prod-service-account
+  annotations:
+    # IRSA for AWS EKS
+    eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/ehs-prod-role"
+  automountServiceAccountToken: false
+
+# 持久化存储 - 生产环境
+persistence:
+  enabled: true
+  size: 50Gi
+  storageClass: "gp3-encrypted"
+  accessModes:
+    - ReadWriteMany
+  reclaimPolicy: Retain
+
+# 备份配置 - 生产环境
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # 每天凌晨 2 点
+  retentionDays: 90
+  storageClass: "backup-storage"
+
+# 高可用配置
+highAvailability:
+  enabled: true
+  # 跨可用区分布
+  multiZone: true
+  zones:
+    - zone-a
+    - zone-b
+    - zone-c
+  # 最小可用节点数
+  minAvailableNodes: 3
+
+# 安全配置
+security:
+  # 启用 Pod Security Standards
+  podSecurityStandards: restricted
+  # 启用网络策略
+  networkPolicies: true
+  # 启用密钥加密
+  encryptionAtRest: true
+  # 审计日志
+  auditLogging: true

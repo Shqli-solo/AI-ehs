@@ -13,6 +13,9 @@
     "test:watch": "pnpm run test:watch --filter @ehs/admin-console",
     "test:coverage": "pnpm run test:coverage --filter @ehs/admin-console",
     "typecheck": "pnpm run typecheck --filter @ehs/admin-console",
+    "test:e2e": "playwright test --config=tests/e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config=tests/e2e/playwright.config.ts --ui",
+    "test:e2e:headed": "playwright test --config=tests/e2e/playwright.config.ts --headed",
     "dev:all": "concurrently \"pnpm run dev\" \"pnpm run dev:backend\"",
     "dev:backend": "cd apps/ehs-ai && poetry run uvicorn src.api.rest:app --reload --host 0.0.0.0 --port 8000",
     "dev:java": "cd apps/ehs-business && mvn spring-boot:run",
@@ -20,6 +23,7 @@
     "test:all": "./scripts/run-tests.sh"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "concurrently": "^8.2.2"
   },
   "engines": {

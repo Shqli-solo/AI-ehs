@@ -1,0 +1,45 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "ehs-helm.serviceMonitorName" . }}
+  labels:
+    {{- include "ehs-helm.labels" . | nindent 4 }}
+    {{- if .Values.monitoring.serviceMonitor.additionalLabels }}
+    {{- toYaml .Values.monitoring.serviceMonitor.additionalLabels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: ehs-platform
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    # Frontend metrics endpoint
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+      targetPort: 3000
+    # Java service metrics endpoint
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+      targetPort: 8080
+    # Python service metrics endpoint
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+      targetPort: 8000
+  {{- if .Values.monitoring.serviceMonitor.metricRelabelings }}
+  metricRelabelings:
+    {{- toYaml .Values.monitoring.serviceMonitor.metricRelabelings | nindent 4 }}
+  {{- end }}
+  {{- if .Values.monitoring.serviceMonitor.relabelings }}
+  relabelings:
+    {{- toYaml .Values.monitoring.serviceMonitor.relabelings | nindent 4 }}
+  {{- end }}
+{{- end }}

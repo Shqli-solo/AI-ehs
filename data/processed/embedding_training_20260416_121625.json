@@ -1,0 +1,870 @@
+[
+  {
+    "text1": "火灾",
+    "text2": "火情",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火灾",
+    "text2": "火警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火灾",
+    "text2": "燃烧事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火灾",
+    "text2": "消防事件",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火情",
+    "text2": "火警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火情",
+    "text2": "燃烧事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火情",
+    "text2": "消防事件",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火警",
+    "text2": "燃烧事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "火警",
+    "text2": "消防事件",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "燃烧事故",
+    "text2": "消防事件",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "极高风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "灾难性风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于公司范围内所有火灾事故的应急处置。火灾事故发生时，应立即启动本预案，组织人员疏散，进行初期火灾扑救，并报告消防部门。预案包括火灾预警、应急响应、人员疏散、火灾扑救、事后恢复等内容。",
+    "text2": "火灾",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司范围内所有火灾事故的应急处置。火灾事故发生时，应立即启动本预案，组织人员疏散，进行初期火灾扑救，并报告消防部门。预案包括火灾预警、应急响应、人员疏散、火灾扑救、事后恢复等内容。",
+    "text2": "火情",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司范围内所有火灾事故的应急处置。火灾事故发生时，应立即启动本预案，组织人员疏散，进行初期火灾扑救，并报告消防部门。预案包括火灾预警、应急响应、人员疏散、火灾扑救、事后恢复等内容。",
+    "text2": "火警",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司范围内所有火灾事故的应急处置。火灾事故发生时，应立即启动本预案，组织人员疏散，进行初期火灾扑救，并报告消防部门。预案包括火灾预警、应急响应、人员疏散、火灾扑救、事后恢复等内容。",
+    "text2": "燃烧事故",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司范围内所有火灾事故的应急处置。火灾事故发生时，应立即启动本预案，组织人员疏散，进行初期火灾扑救，并报告消防部门。预案包括火灾预警、应急响应、人员疏散、火灾扑救、事后恢复等内容。",
+    "text2": "消防事件",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "燃气泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "甲烷泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "可燃气体泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "燃气泄漏",
+    "text2": "甲烷泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "燃气泄漏",
+    "text2": "可燃气体泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "甲烷泄漏",
+    "text2": "可燃气体泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "极高风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "灾难性风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于甲烷、氢气等可燃气体泄漏事故的应急处置。气体泄漏可能引发火灾、爆炸、中毒等次生灾害，必须迅速响应。预案包括泄漏检测、警戒隔离、人员疏散、泄漏处置、环境监测等内容。",
+    "text2": "气体泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于甲烷、氢气等可燃气体泄漏事故的应急处置。气体泄漏可能引发火灾、爆炸、中毒等次生灾害，必须迅速响应。预案包括泄漏检测、警戒隔离、人员疏散、泄漏处置、环境监测等内容。",
+    "text2": "燃气泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于甲烷、氢气等可燃气体泄漏事故的应急处置。气体泄漏可能引发火灾、爆炸、中毒等次生灾害，必须迅速响应。预案包括泄漏检测、警戒隔离、人员疏散、泄漏处置、环境监测等内容。",
+    "text2": "甲烷泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于甲烷、氢气等可燃气体泄漏事故的应急处置。气体泄漏可能引发火灾、爆炸、中毒等次生灾害，必须迅速响应。预案包括泄漏检测、警戒隔离、人员疏散、泄漏处置、环境监测等内容。",
+    "text2": "可燃气体泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "温度异常",
+    "text2": "机房过热",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "温度异常",
+    "text2": "高温告警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "温度异常",
+    "text2": "温度超标",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "机房过热",
+    "text2": "高温告警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "机房过热",
+    "text2": "温度超标",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "高温告警",
+    "text2": "温度超标",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "中等风险",
+    "text2": "注意风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "中等风险",
+    "text2": "需关注",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "注意风险",
+    "text2": "需关注",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于数据中心机房温度异常升高事件的应急处置。机房温度过高可能导致服务器宕机、数据丢失等严重后果。预案包括温度监测、空调故障处理、设备保护、紧急散热等内容。",
+    "text2": "温度异常",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于数据中心机房温度异常升高事件的应急处置。机房温度过高可能导致服务器宕机、数据丢失等严重后果。预案包括温度监测、空调故障处理、设备保护、紧急散热等内容。",
+    "text2": "机房过热",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于数据中心机房温度异常升高事件的应急处置。机房温度过高可能导致服务器宕机、数据丢失等严重后果。预案包括温度监测、空调故障处理、设备保护、紧急散热等内容。",
+    "text2": "高温告警",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于数据中心机房温度异常升高事件的应急处置。机房温度过高可能导致服务器宕机、数据丢失等严重后果。预案包括温度监测、空调故障处理、设备保护、紧急散热等内容。",
+    "text2": "温度超标",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "入侵",
+    "text2": "非法闯入",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "入侵",
+    "text2": "安防告警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "入侵",
+    "text2": "周界报警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "非法闯入",
+    "text2": "安防告警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "非法闯入",
+    "text2": "周界报警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "安防告警",
+    "text2": "周界报警",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "高风险",
+    "text2": "严重风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "高风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "严重风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于非法入侵公司场所的应急处置。入侵事件可能威胁人员安全和公司财产安全。预案包括入侵检测、警戒响应、人员管控、报警处置、事后调查等内容。",
+    "text2": "入侵",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于非法入侵公司场所的应急处置。入侵事件可能威胁人员安全和公司财产安全。预案包括入侵检测、警戒响应、人员管控、报警处置、事后调查等内容。",
+    "text2": "非法闯入",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于非法入侵公司场所的应急处置。入侵事件可能威胁人员安全和公司财产安全。预案包括入侵检测、警戒响应、人员管控、报警处置、事后调查等内容。",
+    "text2": "安防告警",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于非法入侵公司场所的应急处置。入侵事件可能威胁人员安全和公司财产安全。预案包括入侵检测、警戒响应、人员管控、报警处置、事后调查等内容。",
+    "text2": "周界报警",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "停电",
+    "text2": "电力故障",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "停电",
+    "text2": "断电",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "停电",
+    "text2": "供电中断",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "电力故障",
+    "text2": "断电",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "电力故障",
+    "text2": "供电中断",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "断电",
+    "text2": "供电中断",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "中等风险",
+    "text2": "注意风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "中等风险",
+    "text2": "需关注",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "注意风险",
+    "text2": "需关注",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于公司突发停电事件的应急处置。电力故障可能导致生产中断、数据丢失、设备损坏等后果。预案包括故障检测、UPS 切换、设备保护、应急供电、恢复送电等内容。",
+    "text2": "停电",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司突发停电事件的应急处置。电力故障可能导致生产中断、数据丢失、设备损坏等后果。预案包括故障检测、UPS 切换、设备保护、应急供电、恢复送电等内容。",
+    "text2": "电力故障",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司突发停电事件的应急处置。电力故障可能导致生产中断、数据丢失、设备损坏等后果。预案包括故障检测、UPS 切换、设备保护、应急供电、恢复送电等内容。",
+    "text2": "断电",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于公司突发停电事件的应急处置。电力故障可能导致生产中断、数据丢失、设备损坏等后果。预案包括故障检测、UPS 切换、设备保护、应急供电、恢复送电等内容。",
+    "text2": "供电中断",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "化学品泄漏",
+    "text2": "危化品泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "化学品泄漏",
+    "text2": "液体泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "化学品泄漏",
+    "text2": "化学事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "危化品泄漏",
+    "text2": "液体泄漏",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "危化品泄漏",
+    "text2": "化学事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "液体泄漏",
+    "text2": "化学事故",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "高风险",
+    "text2": "严重风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "高风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "严重风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于危险化学品泄漏事故的应急处置。化学品泄漏可能造成人员中毒、环境污染、火灾爆炸等危害。预案包括泄漏识别、人员防护、泄漏控制、废物处置、环境监测等内容。",
+    "text2": "化学品泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于危险化学品泄漏事故的应急处置。化学品泄漏可能造成人员中毒、环境污染、火灾爆炸等危害。预案包括泄漏识别、人员防护、泄漏控制、废物处置、环境监测等内容。",
+    "text2": "危化品泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于危险化学品泄漏事故的应急处置。化学品泄漏可能造成人员中毒、环境污染、火灾爆炸等危害。预案包括泄漏识别、人员防护、泄漏控制、废物处置、环境监测等内容。",
+    "text2": "液体泄漏",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于危险化学品泄漏事故的应急处置。化学品泄漏可能造成人员中毒、环境污染、火灾爆炸等危害。预案包括泄漏识别、人员防护、泄漏控制、废物处置、环境监测等内容。",
+    "text2": "化学事故",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "地震",
+    "text2": "震灾",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "地震",
+    "text2": "地质灾害",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "震灾",
+    "text2": "地质灾害",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "极高风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "危急风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "灾难性风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "极高风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "灾难性风险",
+    "text2": "紧急状态",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于地震灾害的应急处置。地震是突发性自然灾害，可能造成建筑损毁、人员伤亡、次生灾害。预案包括地震预警、紧急避险、人员疏散、搜救抢险、灾后重建等内容。",
+    "text2": "地震",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于地震灾害的应急处置。地震是突发性自然灾害，可能造成建筑损毁、人员伤亡、次生灾害。预案包括地震预警、紧急避险、人员疏散、搜救抢险、灾后重建等内容。",
+    "text2": "震灾",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于地震灾害的应急处置。地震是突发性自然灾害，可能造成建筑损毁、人员伤亡、次生灾害。预案包括地震预警、紧急避险、人员疏散、搜救抢险、灾后重建等内容。",
+    "text2": "地质灾害",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "洪水",
+    "text2": "水灾",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "洪水",
+    "text2": "洪涝",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "洪水",
+    "text2": "进水",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "水灾",
+    "text2": "洪涝",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "水灾",
+    "text2": "进水",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "洪涝",
+    "text2": "进水",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "event_type"
+  },
+  {
+    "text1": "高风险",
+    "text2": "严重风险",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "高风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "严重风险",
+    "text2": "需立即处理",
+    "label": 1.0,
+    "pair_type": "synonym",
+    "category": "risk_level"
+  },
+  {
+    "text1": "本预案适用于洪水灾害的应急处置。洪水可能造成建筑进水、设备浸泡、人员被困。预案包括洪水预警、物资转移、排水抢险、人员救援、灾后恢复等内容。",
+    "text2": "洪水",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于洪水灾害的应急处置。洪水可能造成建筑进水、设备浸泡、人员被困。预案包括洪水预警、物资转移、排水抢险、人员救援、灾后恢复等内容。",
+    "text2": "水灾",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于洪水灾害的应急处置。洪水可能造成建筑进水、设备浸泡、人员被困。预案包括洪水预警、物资转移、排水抢险、人员救援、灾后恢复等内容。",
+    "text2": "洪涝",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "本预案适用于洪水灾害的应急处置。洪水可能造成建筑进水、设备浸泡、人员被困。预案包括洪水预警、物资转移、排水抢险、人员救援、灾后恢复等内容。",
+    "text2": "进水",
+    "label": 0.8,
+    "pair_type": "related",
+    "category": "content_event"
+  },
+  {
+    "text1": "火灾",
+    "text2": "气体泄漏",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "火灾",
+    "text2": "温度异常",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "火灾",
+    "text2": "入侵",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "火灾",
+    "text2": "停电",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "温度异常",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "入侵",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "气体泄漏",
+    "text2": "停电",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "温度异常",
+    "text2": "入侵",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "温度异常",
+    "text2": "停电",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  },
+  {
+    "text1": "入侵",
+    "text2": "停电",
+    "label": 0.0,
+    "pair_type": "negative",
+    "category": "cross_event"
+  }
+]

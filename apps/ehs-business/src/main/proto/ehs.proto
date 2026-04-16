@@ -1,0 +1,182 @@
+// EHS 智能安保决策中台 - gRPC Proto 定义
+// 版本：2.0.0
+// 最后更新：2026-04-16
+
+syntax = "proto3";
+
+package ehs;
+
+option java_multiple_files = true;
+option java_package = "com.ehs.business.infrastructure.grpc.proto";
+option java_outer_classname = "EhsProto";
+
+// ==================== 服务定义 ====================
+
+// EHS AI 服务 - 提供 AI 能力
+service EhsAiService {
+    // 健康检查
+    rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+
+    // 风险分级 - 分析文本风险等级
+    rpc ClassifyRisk (RiskClassificationRequest) returns (RiskClassificationResponse);
+
+    // 指令微调生成 - 基于上下文生成响应
+    rpc GenerateResponse (ResponseGenerationRequest) returns (ResponseGenerationResponse);
+
+    // 告警分析 - 分析告警事件
+    rpc AnalyzeAlert (AlertAnalysisRequest) returns (AlertAnalysisResponse);
+
+    // 术语 Embedding - 获取术语向量表示
+    rpc GetTermEmbedding (TermEmbeddingRequest) returns (TermEmbeddingResponse);
+
+    // 批量术语 Embedding - 批量获取术语向量
+    rpc GetBatchEmbeddings (BatchEmbeddingRequest) returns (BatchEmbeddingResponse);
+}
+
+// ==================== 通用消息 ====================
+
+// 风险等级枚举
+enum RiskLevel {
+    RISK_LEVEL_UNSPECIFIED = 0;
+    RISK_LEVEL_LOW = 1;         // 低风险
+    RISK_LEVEL_MEDIUM = 2;      // 中风险
+    RISK_LEVEL_HIGH = 3;        // 高风险
+    RISK_LEVEL_CRITICAL = 4;    // 危急风险
+}
+
+// 告警类型枚举
+enum AlertType {
+    ALERT_TYPE_UNSPECIFIED = 0;
+    ALERT_TYPE_FIRE = 1;        // 火灾告警
+    ALERT_TYPE_GAS = 2;         // 气体泄漏告警
+    ALERT_TYPE_INTRUSION = 3;   // 入侵检测告警
+    ALERT_TYPE_TEMPERATURE = 4; // 温度异常告警
+    ALERT_TYPE_EQUIPMENT = 5;   // 设备故障告警
+    ALERT_TYPE_OTHER = 6;       // 其他告警
+}
+
+// 分页请求
+message PaginationRequest {
+    int32 page = 1;      // 页码（从 1 开始）
+    int32 page_size = 2; // 每页大小
+}
+
+// 分页响应
+message PaginationResponse {
+    int32 total = 1;        // 总数
+    int32 page = 2;         // 当前页码
+    int32 page_size = 3;    // 每页大小
+    int32 total_pages = 4;  // 总页数
+}
+
+// ==================== 健康检查 ====================
+
+message HealthCheckRequest {
+    string service = 1;  // 服务名称
+}
+
+message HealthCheckResponse {
+    bool healthy = 1;           // 是否健康
+    string service = 2;         // 服务名称
+    string version = 3;         // 服务版本
+    int64 timestamp = 4;        // 时间戳（毫秒）
+    repeated string checks = 5; // 健康检查项
+}
+
+// ==================== 风险分级 ====================
+
+message RiskClassificationRequest {
+    string text = 1;              // 待分析的文本内容
+    string request_id = 2;        // 请求 ID（用于追踪）
+    int64 timestamp = 3;          // 请求时间戳
+    map<string, string> metadata = 4; // 附加元数据
+}
+
+message RiskClassificationResponse {
+    RiskLevel risk_level = 1;           // 风险等级
+    float confidence = 2;               // 置信度 (0.0-1.0)
+    string reason = 3;                  // 风险判定原因
+    repeated string keywords = 4;       // 关键词列表
+    string request_id = 5;              // 请求 ID
+    int64 processing_time_ms = 6;       // 处理耗时（毫秒）
+}
+
+// ==================== 指令微调生成 ====================
+
+message ResponseGenerationRequest {
+    string query = 1;                   // 用户查询
+    optional string context = 2;        // 上下文信息（可选）
+    optional string system_prompt = 3;  // 系统提示词（可选）
+    string request_id = 4;              // 请求 ID
+    int64 timestamp = 5;                // 请求时间戳
+    int32 max_tokens = 6;               // 最大生成 token 数
+    float temperature = 7;              // 温度参数 (0.0-2.0)
+}
+
+message ResponseGenerationResponse {
+    string response = 1;                // AI 生成的响应
+    string request_id = 2;              // 请求 ID
+    int64 processing_time_ms = 3;       // 处理耗时（毫秒）
+    int32 tokens_used = 4;              // 使用的 token 数
+    string model = 5;                   // 使用的模型
+    bool truncated = 6;                 // 是否被截断
+}
+
+// ==================== 告警分析 ====================
+
+message AlertAnalysisRequest {
+    AlertType alert_type = 1;           // 告警类型
+    RiskLevel alert_level = 2;          // 告警级别
+    string content = 3;                 // 告警内容
+    string location = 4;                // 告警位置
+    string request_id = 5;              // 请求 ID
+    int64 timestamp = 6;                // 请求时间戳
+    map<string, string> sensor_data = 7; // 传感器数据
+}
+
+message AlertAnalysisResponse {
+    string analysis = 1;                    // AI 分析结果
+    string suggested_action = 2;            // 建议处理措施
+    RiskLevel recommended_level = 3;        // 推荐风险等级
+    repeated string related_plans = 4;      // 相关预案 ID 列表
+    float confidence = 5;                   // 置信度
+    string request_id = 6;                  // 请求 ID
+    int64 processing_time_ms = 7;           // 处理耗时（毫秒）
+}
+
+// ==================== 术语 Embedding ====================
+
+message TermEmbeddingRequest {
+    string term = 1;            // 术语
+    string request_id = 2;      // 请求 ID
+    int64 timestamp = 3;        // 请求时间戳
+}
+
+message TermEmbeddingResponse {
+    string term = 1;                    // 术语
+    repeated double embedding = 2;      // Embedding 向量（768 维）
+    int32 dimension = 3;                // 向量维度
+    string request_id = 4;              // 请求 ID
+    int64 processing_time_ms = 5;       // 处理耗时（毫秒）
+}
+
+// ==================== 批量 Embedding ====================
+
+message BatchEmbeddingRequest {
+    repeated string terms = 1;          // 术语列表
+    string request_id = 2;              // 请求 ID
+    int64 timestamp = 3;                // 请求时间戳
+}
+
+message BatchEmbeddingResponse {
+    repeated TermEmbeddingResult results = 1; // 结果列表
+    string request_id = 2;                     // 请求 ID
+    int64 processing_time_ms = 3;              // 处理耗时（毫秒）
+}
+
+message TermEmbeddingResult {
+    string term = 1;                    // 术语
+    repeated double embedding = 2;      // Embedding 向量
+    bool success = 3;                   // 是否成功
+    optional string error = 4;          // 错误信息（如果失败）
+}

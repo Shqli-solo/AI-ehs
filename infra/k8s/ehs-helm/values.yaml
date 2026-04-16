@@ -1,0 +1,346 @@
+# EHS 智能安保决策中台 - Helm Chart Values
+# 默认配置（适用于开发环境）
+
+# 全局配置
+global:
+  clusterDomain: cluster.local
+  imageRegistry: ""  # 留空使用 Docker Hub，或指定私有仓库如 registry.example.com
+  storageClass: ""   # 留空使用默认 StorageClass
+  environment: dev
+
+# 前端配置 (Next.js Admin Console)
+frontend:
+  name: frontend
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ehs-admin-console
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    hosts:
+      - host: ehs.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: true
+    allowedNamespaces: []
+
+# Java 业务服务配置 (Spring Boot COLA)
+javaService:
+  name: java-service
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ehs-business-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  grpc:
+    enabled: true
+    port: 9090
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+  ingress:
+    enabled: false
+  livenessProbe:
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startupProbe:
+    httpGet:
+      path: /actuator/health/startup
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    allowedNamespaces:
+      - monitoring
+
+# Python AI 服务配置 (FastAPI + LangGraph)
+pythonService:
+  name: python-service
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ehs-ai-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  grpc:
+    enabled: true
+    port: 9091
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 30
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 70
+  ingress:
+    enabled: false
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    allowedNamespaces:
+      - monitoring
+
+# 配置映射
+configMap:
+  # 应用配置
+  appConfig:
+    NODE_ENV: "production"
+    PYTHON_ENV: "production"
+    SPRING_PROFILES_ACTIVE: "production"
+    LOG_LEVEL: "INFO"
+    # API 配置
+    API_VERSION: "v1"
+    API_TIMEOUT: "30s"
+    # 功能开关
+    ENABLE_MOCK_LLM: "false"
+    ENABLE_LANGFUSE: "true"
+
+  # Elasticsearch 配置
+  elasticsearch:
+    ES_HOST: "elasticsearch-master"
+    ES_PORT: "9200"
+    ES_INDEX_PREFIX: "ehs"
+
+  # Milvus 配置
+  milvus:
+    MILVUS_HOST: "milvus-standalone"
+    MILVUS_PORT: "19530"
+    MILVUS_COLLECTION: "ehs_vectors"
+
+  # LangFuse 链路追踪配置
+  langfuse:
+    LANGFUSE_HOST: "http://langfuse:3000"
+    LANGFUSE_PUBLIC_KEY: ""
+    LANGFUSE_SECRET_KEY: ""
+
+# 密钥配置（实际使用时应通过外部密钥管理）
+secrets:
+  enabled: true
+  # 数据库密码
+  databasePassword: ""
+  # Elasticsearch 密码
+  esPassword: ""
+  # Milvus 密码
+  milvusPassword: ""
+  # JWT 密钥
+  jwtSecret: ""
+  # LangFuse API Keys
+  langfusePublicKey: ""
+  langfuseSecretKey: ""
+  # LLM API Keys (OpenAI/Anthropic 等)
+  llmApiKey: ""
+
+# Ingress 配置
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: ehs.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: frontend
+          servicePort: 80
+        - path: /api
+          pathType: Prefix
+          serviceName: python-service
+          servicePort: 8000
+        - path: /business
+          pathType: Prefix
+          serviceName: java-service
+          servicePort: 8080
+  tls:
+    - secretName: ehs-tls-secret
+      hosts:
+        - ehs.example.com
+
+# Prometheus 监控配置
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  grafanaDashboard:
+    enabled: true
+  alertmanager:
+    enabled: true
+    config:
+      route:
+        receiver: 'slack-notifications'
+        group_by: ['alertname', 'severity']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+      receivers:
+        - name: 'slack-notifications'
+          slack_configs:
+            - channel: '#ehs-alerts'
+              send_resolved: true
+
+# 网络策略默认配置
+networkPolicy:
+  enabled: true
+  # 默认拒绝所有入站流量
+  defaultDeny: true
+  # 允许 DNS 解析
+  allowDns: true
+  # 允许健康检查
+  allowHealthChecks: true
+
+# Pod 安全策略
+podSecurity:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# 服务账户配置
+serviceAccount:
+  create: true
+  name: ehs-service-account
+  annotations: {}
+  # 如果使用 IRSA (IAM Roles for Service Accounts)
+  # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/ehs-role
+
+# 持久化存储配置
+persistence:
+  enabled: false
+  size: 10Gi
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+
+# 备份配置
+backup:
+  enabled: false
+  schedule: "0 2 * * *"  # 每天凌晨 2 点
+  retentionDays: 30

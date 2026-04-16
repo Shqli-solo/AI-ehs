@@ -1,0 +1,360 @@
+openapi: 3.0.3
+info:
+  title: EHS AI Service
+  description: |
+    EHS 智能安保决策中台 - REST API
+
+    ## 六边形架构
+    - **核心域**: GraphRAG 检索引擎、Multi-Agent 工作流
+    - **驱动适配器**: REST API
+    - **被驱动适配器**: Elasticsearch、Milvus
+  version: 2.0.0
+  contact:
+    name: EHS Team
+    email: ehs@example.com
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发环境
+  - url: https://ehs-api.example.com
+    description: 生产环境
+
+tags:
+  - name: health
+    description: 健康检查
+  - name: alert
+    description: 告警管理
+  - name: plan
+    description: 预案管理
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: 健康检查
+      description: 检查服务运行状态
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 服务健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                service: ehs-ai-service
+                timestamp: '2026-04-16T10:00:00Z'
+
+  /api/alert/report:
+    post:
+      tags:
+        - alert
+      summary: 告警上报
+      description: |
+        接收 AIoT 设备告警，调用 Multi-Agent 工作流进行风险评估和预案检索。
+
+        ## 处理流程
+        1. 接收告警消息
+        2. RiskAgent 评估风险等级
+        3. SearchAgent 检索应急预案
+        4. 返回告警 ID 和处置建议
+      operationId: reportAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertReportRequest'
+            examples:
+              fire:
+                summary: 火灾告警
+                value:
+                  device_id: "DEV-001"
+                  device_type: "烟雾探测器"
+                  alert_type: "fire"
+                  alert_content: "3 号楼 2 层检测到浓烟"
+                  location: "3 号楼 2 层"
+                  alert_level: 3
+              gas_leak:
+                summary: 气体泄漏告警
+                value:
+                  device_id: "DEV-002"
+                  device_type: "气体传感器"
+                  alert_type: "gas_leak"
+                  alert_content: "地下室甲烷浓度超标"
+                  location: "地下室"
+                  alert_level: 4
+      responses:
+        '200':
+          description: 告警上报成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertReportResponse'
+              examples:
+                success:
+                  summary: 成功响应
+                  value:
+                    success: true
+                    message: "告警上报成功"
+                    alert_id: "550e8400-e29b-41d4-a716-446655440000"
+                    risk_level: "high"
+                    plans:
+                      - title: "火灾事故专项应急预案"
+                        content: "1. 立即启动消防泵 2. 疏散人员"
+                        risk_level: "high"
+                error:
+                  summary: 错误响应
+                  value:
+                    success: false
+                    message: "告警上报失败"
+                    error: "工作流执行超时"
+        '422':
+          description: 输入验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/plan/search:
+    post:
+      tags:
+        - plan
+      summary: 预案检索
+      description: |
+        使用 GraphRAG 检索引擎搜索应急预案。
+
+        ## 检索流程
+        1. ES BM25 文本检索
+        2. Milvus 向量相似度检索
+        3. 合并去重
+        4. BGE-Reranker 重排序
+      operationId: searchPlan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSearchRequest'
+            examples:
+              fire:
+                summary: 火灾预案检索
+                value:
+                  query: "火灾应急处置"
+                  event_type: "fire"
+                  top_k: 5
+              general:
+                summary: 通用检索
+                value:
+                  query: "应急预案"
+                  top_k: 10
+      responses:
+        '200':
+          description: 预案检索成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanSearchResponse'
+              example:
+                success: true
+                message: "预案检索成功"
+                plans:
+                  - id: "plan-001"
+                    content: "火灾事故专项应急预案..."
+                    score: 0.95
+                    metadata:
+                      risk_level: "high"
+                      source: "ES"
+                query: "火灾应急处置"
+        '422':
+          description: 输入验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - timestamp
+      properties:
+        status:
+          type: string
+          description: 服务状态
+          enum: [healthy, unhealthy, degraded]
+        service:
+          type: string
+          description: 服务名称
+        timestamp:
+          type: string
+          format: date-time
+          description: 时间戳
+
+    AlertReportRequest:
+      type: object
+      required:
+        - device_id
+        - device_type
+        - alert_type
+        - alert_content
+        - location
+        - alert_level
+      properties:
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: 设备 ID
+        device_type:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: 设备类型
+        alert_type:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: 告警类型
+          enum: [fire, gas_leak, temperature_abnormal, intrusion, other]
+        alert_content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: 告警内容
+        location:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 告警位置
+        alert_level:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: 告警级别（1-最低，4-最高）
+        extra_data:
+          type: object
+          description: 额外数据
+
+    AlertReportResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: 是否成功
+        message:
+          type: string
+          description: 响应消息
+        alert_id:
+          type: string
+          format: uuid
+          description: 告警 ID
+        risk_level:
+          type: string
+          enum: [low, medium, high, unknown]
+          description: 风险等级
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plan'
+          description: 关联预案
+        error:
+          type: string
+          description: 错误信息
+
+    PlanSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: 查询文本
+        event_type:
+          type: string
+          description: 事件类型
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: 返回结果数量
+
+    PlanSearchResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plan'
+        query:
+          type: string
+        error:
+          type: string
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 预案 ID
+        title:
+          type: string
+          description: 预案标题
+        content:
+          type: string
+          description: 预案内容
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+          description: 风险等级
+        source:
+          type: string
+          enum: [ES, Milvus, Mock]
+          description: 来源
+        score:
+          type: number
+          format: float
+          description: 相似度分数
+        metadata:
+          type: object
+          description: 元数据
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          default: false
+        message:
+          type: string
+          description: 错误消息
+        detail:
+          type: string
+          description: 详细错误信息
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
