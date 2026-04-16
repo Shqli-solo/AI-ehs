@@ -106,3 +106,8 @@ temp/
 ## OS
 Thumbs.db
 .DS_Store
+
+## Personal Files (简历等个人文档)
+直投*.md
+直投 -*.md
+直投.md
