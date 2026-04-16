@@ -93,6 +93,7 @@ out/
 build/
 dist/
 *.tgz
+*.tsbuildinfo
 
 ## Docker
 docker-compose.override.yml
