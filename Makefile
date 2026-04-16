@@ -33,7 +33,7 @@ help:
 # Development
 dev:
 	@echo "Starting frontend development server..."
-	cd apps/admin-console && npm run dev
+	cd apps/admin-console && pnpm run dev
 
 dev-backend:
 	@echo "Starting Python AI service..."
@@ -46,7 +46,7 @@ dev-java:
 dev-all:
 	@echo "Starting all services..."
 	npx concurrently \
-		"npm run dev" \
+		"pnpm run dev" \
 		"cd apps/ehs-ai && poetry run uvicorn src.api.rest:app --reload --host 0.0.0.0 --port 8000" \
 		"cd apps/ehs-business && mvn spring-boot:run" \
 		--names "frontend,python,java" \
@@ -58,7 +58,7 @@ test: test-frontend test-python
 
 test-frontend:
 	@echo "Running frontend tests..."
-	cd apps/admin-console && npm test
+	cd apps/admin-console && pnpm test
 
 test-python:
 	@echo "Running Python AI service tests..."
@@ -70,7 +70,7 @@ test-java:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	cd apps/admin-console && npm run test:coverage
+	cd apps/admin-console && pnpm run test:coverage
 	cd apps/ehs-ai && poetry run pytest --cov=src --cov-report=html
 
 # Building
@@ -79,7 +79,7 @@ build: build-frontend build-python
 
 build-frontend:
 	@echo "Building frontend..."
-	cd apps/admin-console && npm run build
+	cd apps/admin-console && pnpm run build
 
 build-python:
 	@echo "Building Python AI service..."
@@ -95,7 +95,7 @@ install: install-frontend install-python
 
 install-frontend:
 	@echo "Installing frontend dependencies..."
-	cd apps/admin-console && npm install
+	cd apps/admin-console && pnpm install
 
 install-python:
 	@echo "Installing Python dependencies..."

@@ -59,6 +59,15 @@ check_prerequisites() {
         exit 1
     fi
 
+    # Check pnpm
+    if command -v pnpm &> /dev/null; then
+        PNPM_VERSION=$(pnpm -v)
+        print_status "pnpm installed: $PNPM_VERSION"
+    else
+        print_info "pnpm not found. Installing..."
+        npm install -g pnpm
+    fi
+
     # Check Python
     if command -v python3 &> /dev/null; then
         PYTHON_VERSION=$(python3 --version)
@@ -110,11 +119,11 @@ check_prerequisites() {
 
 # Install frontend dependencies
 install_frontend() {
-    print_info "Installing frontend dependencies..."
+    print_info "Installing frontend dependencies with pnpm..."
 
     if [[ -d "apps/admin-console" ]]; then
         cd apps/admin-console
-        npm install
+        pnpm install
         cd ../..
         print_status "Frontend dependencies installed"
     else

@@ -41,7 +41,7 @@ run_frontend_tests() {
     if [[ -d "apps/admin-console" ]] && [[ -f "apps/admin-console/package.json" ]]; then
         cd apps/admin-console
 
-        if npm test; then
+        if pnpm test; then
             print_status "Frontend tests passed"
             ((TESTS_PASSED++))
         else

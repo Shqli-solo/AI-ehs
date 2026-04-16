@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "EHS 智能安保决策中台 - 前端管理控制台",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
