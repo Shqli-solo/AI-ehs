@@ -245,13 +245,14 @@ public class GrpcConfig {
     }
 
     /**
-     * 创建带有超时设置的 ClientResponseObserver
+     * 创建 ClientResponseObserver 用于记录成功/失败
+     * 超时应在 gRPC 调用时通过 ClientCall 设置
      */
-    public <ReqT, RespT> ClientResponseObserver<ReqT, RespT> createTimeoutObserver() {
+    public <ReqT, RespT> ClientResponseObserver<ReqT, RespT> createResponseObserver() {
         return new ClientResponseObserver<ReqT, RespT>() {
             @Override
             public void beforeStart(ClientCallStreamObserver<ReqT> requestStream) {
-                requestStream.setDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS);
+                // 可以在这里设置流式调用的参数
             }
 
             @Override
