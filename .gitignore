@@ -106,12 +106,3 @@ temp/
 ## OS
 Thumbs.db
 .DS_Store
-
-## Project specific
-.python-ai-service/
-admin-console/node_modules/
-python-ai-service/__pycache__/
-python-ai-service/.pytest_cache/
-python-ai-service/coverage/
-python-ai-service/logs/
-backend.log
