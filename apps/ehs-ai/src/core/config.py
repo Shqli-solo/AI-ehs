@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # CORS - 生产环境使用环境变量配置
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://ehs.example.com"
 
+    # JWT 认证
+    JWT_SECRET: str = "change-this-secret-in-production"
+    JWT_EXPIRATION_MINUTES: int = 60
+
+    # 认证开关（开发环境可关闭认证）
+    AUTH_ENABLED: bool = True
+
     @property
     def cors_origins_list(self) -> List[str]:
         """解析 CORS 来源列表"""
