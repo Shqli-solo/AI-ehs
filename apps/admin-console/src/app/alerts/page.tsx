@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from 'react';
 import { useAlerts } from "@/hooks/use-alerts";
 import { Alert } from "@/types/alert";
 import { AlertRow } from "./components/AlertRow";

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from 'react';
 import { Alert } from "@/types/alert";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Eye } from "lucide-react";

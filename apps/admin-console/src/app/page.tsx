@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useAlerts, useAlertStats } from "@/hooks/use-alerts";

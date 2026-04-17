@@ -12,6 +12,9 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.d.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
     },
+    esbuild: {
+      jsx: 'automatic',
+    },
   },
   resolve: {
     alias: {
