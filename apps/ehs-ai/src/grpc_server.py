@@ -196,15 +196,15 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             return ehs_pb2.BatchEmbeddingResponse()
 
 
-def serve(port: int = 50051):
-    """启动 gRPC 服务（阻塞式）"""
+def serve(port: int = 50051) -> grpc.server:
+    """启动 gRPC 服务（非阻塞，返回 server 对象供关闭时清理）"""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     servicer = EhsAiServicer()
     ehs_pb2_grpc.add_EhsAiServiceServicer_to_server(servicer, server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     logger.info(f"gRPC server started on port {port}")
-    server.wait_for_termination()
+    return server
 
 
 if __name__ == "__main__":

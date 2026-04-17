@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 from functools import wraps
-import threading
+import logging
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -84,15 +85,12 @@ class HealthResponse(BaseModel):
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时初始化
-    print("EHS AI Service 启动中...")
-    grpc_thread = threading.Thread(
-        target=lambda: serve(port=50051),
-        daemon=True,
-    )
-    grpc_thread.start()
+    logger.info("EHS AI Service 启动中...")
+    grpc_server = serve(port=50051)
     yield
     # 关闭时清理
-    print("EHS AI Service 关闭中...")
+    logger.info("EHS AI Service 关闭中，停止 gRPC 服务...")
+    grpc_server.stop(grace=5)
 
 
 # 创建 FastAPI 应用
