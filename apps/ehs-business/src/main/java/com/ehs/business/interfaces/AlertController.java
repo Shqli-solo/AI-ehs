@@ -7,11 +7,12 @@ import com.ehs.business.interfaces.dto.AlertRequest;
 import com.ehs.business.interfaces.dto.AlertResponse;
 import com.ehs.business.interfaces.dto.PageResponse;
 import com.ehs.business.interfaces.dto.PageResponse.DataWrapper;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +36,8 @@ public class AlertController {
     /**
      * 获取告警列表（支持分页和过滤）
      * GET /api/alert/list?status=&riskLevel=&page=&pageSize=
+     *
+     * 注意：当前使用内存数据分页，生产环境应改为数据库分页
      */
     @GetMapping("/list")
     public PageResponse<AlertResponse> getAlerts(
@@ -47,7 +50,7 @@ public class AlertController {
 
         // 按状态过滤
         List<Alert> filtered = allAlerts.stream()
-            .filter(a -> status == null || status.isEmpty() || statusMatches(a, status))
+            .filter(a -> status == null || status.isEmpty() || AlertAssembler.statusMatches(a, status))
             .filter(a -> riskLevel == null || riskLevel.isEmpty() ||
                          a.getLevel().equalsIgnoreCase(riskLevel))
             .collect(Collectors.toList());
@@ -60,15 +63,18 @@ public class AlertController {
             : new ArrayList<>();
 
         List<AlertResponse> responses = pageAlerts.stream()
-            .map(this::toResponse)
+            .map(AlertAssembler::toResponse)
             .collect(Collectors.toList());
 
-        long pending = filtered.stream().filter(a -> a.getStatus() == AlertStatus.PENDING).count();
-        long processing = filtered.stream().filter(a -> a.getStatus() == AlertStatus.ESCALATED).count();
-        long resolved = filtered.stream().filter(a -> a.getStatus() == AlertStatus.HANDLED).count();
+        // 单次遍历统计各状态数量
+        Map<AlertStatus, Long> counts = AlertAssembler.countByStatus(filtered);
 
         return PageResponse.ok(new DataWrapper<>(
-            filtered.size(), pending, processing, resolved, responses
+            filtered.size(),
+            counts.getOrDefault(AlertStatus.PENDING, 0L),
+            counts.getOrDefault(AlertStatus.ESCALATED, 0L),
+            counts.getOrDefault(AlertStatus.HANDLED, 0L),
+            responses
         ));
     }
 
@@ -77,17 +83,19 @@ public class AlertController {
      * POST /api/alert/report
      */
     @PostMapping("/report")
-    public AlertResponse reportAlert(@RequestBody AlertRequest request) {
-        String level = levelFromInt(request.getAlertLevel());
+    public AlertResponse reportAlert(@Valid @RequestBody AlertRequest request) {
+        String level = AlertAssembler.levelFromInt(request.getAlertLevel());
         Alert alert = alertService.createAlert(
             request.getAlertType(),
             level,
             request.getAlertContent()
         );
+        alert.setLocation(request.getLocation() != null ? request.getLocation() : "未知位置");
+        alert.setDeviceId(request.getDeviceId() != null ? request.getDeviceId() : "");
 
         String aiAnalysis = alertService.analyzeAlertWithAi(alert.getId());
 
-        return toResponseWithAi(alert, aiAnalysis);
+        return AlertAssembler.toResponseWithAi(alert, aiAnalysis);
     }
 
     /**
@@ -97,76 +105,14 @@ public class AlertController {
     @GetMapping("/stats/today")
     public PageResponse<AlertResponse> getTodayStats() {
         List<Alert> allAlerts = alertService.getAllAlerts();
-        long pending = allAlerts.stream().filter(a -> a.getStatus() == AlertStatus.PENDING).count();
-        long processing = allAlerts.stream().filter(a -> a.getStatus() == AlertStatus.ESCALATED).count();
-        long resolved = allAlerts.stream().filter(a -> a.getStatus() == AlertStatus.HANDLED).count();
+        Map<AlertStatus, Long> counts = AlertAssembler.countByStatus(allAlerts);
 
         return PageResponse.ok(new DataWrapper<>(
-            allAlerts.size(), pending, processing, resolved, new ArrayList<>()
+            allAlerts.size(),
+            counts.getOrDefault(AlertStatus.PENDING, 0L),
+            counts.getOrDefault(AlertStatus.ESCALATED, 0L),
+            counts.getOrDefault(AlertStatus.HANDLED, 0L),
+            new ArrayList<>()
         ));
-    }
-
-    /**
-     * 判断告警状态是否匹配前端传入的 status 参数
-     * 前端使用 "pending"/"processing"/"resolved"，领域使用枚举
-     */
-    private boolean statusMatches(Alert alert, String status) {
-        switch (status.toLowerCase()) {
-            case "pending":
-                return alert.getStatus() == AlertStatus.PENDING;
-            case "processing":
-                return alert.getStatus() == AlertStatus.ESCALATED;
-            case "resolved":
-                return alert.getStatus() == AlertStatus.HANDLED;
-            default:
-                return true;
-        }
-    }
-
-    /**
-     * 将前端传入的整数告警级别转换为领域级别字符串
-     */
-    private String levelFromInt(int level) {
-        switch (level) {
-            case 1: return "LOW";
-            case 2: return "MEDIUM";
-            case 3: return "HIGH";
-            case 4: return "CRITICAL";
-            default: return "MEDIUM";
-        }
-    }
-
-    /**
-     * 将领域对象转换为响应 DTO
-     */
-    private AlertResponse toResponse(Alert alert) {
-        return new AlertResponse(
-            "ALT-" + alert.getId(),
-            alert.getType(),
-            alert.getLocation(),
-            alert.getLevel().toLowerCase(),
-            alert.getStatus().name().toLowerCase(),
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(alert.getCreatedAt()),
-            alert.getDeviceId(),
-            alert.getContent(),
-            null
-        );
-    }
-
-    /**
-     * 将领域对象转换为带 AI 分析的响应 DTO
-     */
-    private AlertResponse toResponseWithAi(Alert alert, String aiAnalysis) {
-        return new AlertResponse(
-            "ALT-" + alert.getId(),
-            alert.getType(),
-            alert.getLocation(),
-            alert.getLevel().toLowerCase(),
-            alert.getStatus().name().toLowerCase(),
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(alert.getCreatedAt()),
-            alert.getDeviceId(),
-            alert.getContent(),
-            aiAnalysis
-        );
     }
 }
