@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from 'react';
 import { useState } from "react";
 import { Plan } from "@/types/plan";
 import { mockPlans } from "@/mock/plans";
