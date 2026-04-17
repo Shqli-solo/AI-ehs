@@ -1,6 +1,8 @@
 package com.ehs.business.application.alert;
 
 import com.ehs.business.domain.alert.Alert;
+import com.ehs.business.infrastructure.grpc.PythonAiClient;
+import com.ehs.business.infrastructure.grpc.proto.AlertAnalysisResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,6 +25,11 @@ public class AlertService {
     // 内存存储（演示用，生产环境应使用数据库）
     private final ConcurrentHashMap<Long, Alert> alertStore = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
+    private final PythonAiClient pythonAiClient;
+
+    public AlertService(PythonAiClient pythonAiClient) {
+        this.pythonAiClient = pythonAiClient;
+    }
 
     /**
      * 创建告警
@@ -81,12 +88,18 @@ public class AlertService {
 
     /**
      * 调用 AI 服务分析告警
-     *
-     * 注意：当前版本使用模拟实现，生产环境需调用 PythonAiClient
      */
     public String analyzeAlertWithAi(Long alertId) {
         return getAlertById(alertId)
-            .map(alert -> "AI 分析结果：告警 [" + alert.getType() + "] 级别=" + alert.getLevel())
+            .map(alert -> {
+                AlertAnalysisResponse response = pythonAiClient.analyzeAlert(
+                    alert.getContent(),
+                    alert.getLocation(),
+                    alert.getType(),
+                    Integer.parseInt(alert.getLevel())
+                );
+                return response.getAnalysis() + "\n建议: " + response.getSuggestedAction();
+            })
             .orElse("告警不存在");
     }
 }
