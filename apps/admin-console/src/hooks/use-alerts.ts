@@ -10,21 +10,10 @@
 
 import * as React from 'react';
 import { api } from '@/services/api';
+import { mockAlerts, alertStats } from '@/mock/alerts';
+import { Alert } from '@/types/alert';
 import type { ApiError, AlertReportRequest, PlanSearchRequest, AlertReportResponse, PlanSearchResponse } from '@/services/api';
-
-/**
- * 告警数据接口
- */
-export interface Alert {
-  id: string;
-  type: string;
-  location: string;
-  riskLevel: 'high' | 'medium' | 'low';
-  status: 'pending' | 'processing' | 'resolved' | 'closed';
-  time: string;
-  deviceId?: string;
-  content?: string;
-}
+import { toast } from 'sonner';
 
 /**
  * 告警统计接口
@@ -61,6 +50,8 @@ interface UseAlertsOptions {
   riskLevel?: 'high' | 'medium' | 'low';
   /** 页面大小 */
   pageSize?: number;
+  /** API 不可用时是否回退到 mock 数据 */
+  fallbackToMock?: boolean;
 }
 
 /**
@@ -87,6 +78,7 @@ export function useAlerts(options: UseAlertsOptions = {}): UseAlertsReturn {
     status,
     riskLevel,
     pageSize = 10,
+    fallbackToMock = true,
   } = options;
 
   const [state, setState] = React.useState<HookState<Alert[]>>({
@@ -104,19 +96,39 @@ export function useAlerts(options: UseAlertsOptions = {}): UseAlertsReturn {
         riskLevel,
         pageSize,
       });
+      const mapped: Alert[] = response.data.alerts.map((a) => ({
+        id: a.id,
+        type: mapAlertType(a.type),
+        title: `${a.type} - ${a.location}`,
+        content: a.content || "",
+        riskLevel: a.riskLevel as Alert["riskLevel"],
+        status: a.status as Alert["status"],
+        location: a.location,
+        deviceId: a.deviceId || "",
+        createdAt: a.time,
+      }));
       setState({
-        data: response.data.alerts,
+        data: mapped,
         loading: false,
         error: null,
       });
     } catch (error) {
-      setState({
-        data: null,
-        loading: false,
-        error: error as ApiError,
-      });
+      if (fallbackToMock) {
+        setState({
+          data: mockAlerts,
+          loading: false,
+          error: null,
+        });
+        toast.warning("后端服务不可用，已切换到演示数据");
+      } else {
+        setState({
+          data: null,
+          loading: false,
+          error: error as ApiError,
+        });
+      }
     }
-  }, [status, riskLevel, pageSize]);
+  }, [status, riskLevel, pageSize, fallbackToMock]);
 
   const refresh = React.useCallback(async () => {
     await load();
@@ -153,7 +165,7 @@ interface UseAlertStatsReturn extends HookState<AlertStats> {
  * const { stats, loading, error, refresh } = useAlertStats();
  * ```
  */
-export function useAlertStats(): UseAlertStatsReturn {
+export function useAlertStats(fallbackToMock: boolean = true): UseAlertStatsReturn {
   const [state, setState] = React.useState<HookState<AlertStats>>({
     data: null,
     loading: false,
@@ -171,13 +183,27 @@ export function useAlertStats(): UseAlertStatsReturn {
         error: null,
       });
     } catch (error) {
-      setState({
-        data: null,
-        loading: false,
-        error: error as ApiError,
-      });
+      if (fallbackToMock) {
+        setState({
+          data: {
+            total: alertStats.today,
+            pending: alertStats.pending,
+            processing: alertStats.processing,
+            resolved: alertStats.resolved,
+            change: '+0 起',
+          },
+          loading: false,
+          error: null,
+        });
+      } else {
+        setState({
+          data: null,
+          loading: false,
+          error: error as ApiError,
+        });
+      }
     }
-  }, []);
+  }, [fallbackToMock]);
 
   const refresh = React.useCallback(async () => {
     await loadStats();
@@ -455,4 +481,22 @@ export function useSafeDays(): UseSafeDaysReturn {
     loading: state.loading,
     refresh,
   };
+}
+
+/**
+ * 将后端告警类型映射到前端类型
+ */
+function mapAlertType(type: string): Alert["type"] {
+  const typeMap: Record<string, Alert["type"]> = {
+    fire: "fire",
+    gas_leak: "gas_leak",
+    temperature: "temperature",
+    intrusion: "intrusion",
+    smoke: "smoke",
+    烟火告警: "fire",
+    气体泄漏: "gas_leak",
+    温度异常: "temperature",
+    入侵检测: "intrusion",
+  };
+  return typeMap[type] || "smoke";
 }

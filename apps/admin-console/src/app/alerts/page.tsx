@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useAlerts } from "@/hooks/use-alerts";
 import { Alert } from "@/types/alert";
-import { mockAlerts } from "@/mock/alerts";
 import { AlertRow } from "./components/AlertRow";
 import { AlertDrawer } from "./components/AlertDrawer";
 import { StatusBadge } from "@/components/common/StatusBadge";
@@ -16,29 +15,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useState, useMemo } from "react";
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState(mockAlerts);
+  const { data: apiAlerts, loading, error, refresh } = useAlerts({ fallbackToMock: true });
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterRisk, setFilterRisk] = useState("all");
 
-  const filtered = alerts.filter((a) => {
-    if (filterStatus !== "all" && a.status !== filterStatus) return false;
-    if (filterRisk !== "all" && a.riskLevel !== filterRisk) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    if (!apiAlerts) return [];
+    return apiAlerts.filter((a) => {
+      if (filterStatus !== "all" && a.status !== filterStatus) return false;
+      if (filterRisk !== "all" && a.riskLevel !== filterRisk) return false;
+      return true;
+    });
+  }, [apiAlerts, filterStatus, filterRisk]);
 
   const handleProcess = (alertId: string) => {
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === alertId ? { ...a, status: "processing" as const } : a
-      )
-    );
     toast.success("已开始处理告警");
     setDrawerOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -70,6 +76,10 @@ export default function AlertsPage() {
             <SelectItem value="low">低</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button variant="outline" size="sm" onClick={refresh}>
+          刷新
+        </Button>
       </div>
 
       {/* 告警列表 */}

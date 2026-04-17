@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { mockAlerts, alertStats } from "@/mock/alerts";
+import { useAlerts, useAlertStats } from "@/hooks/use-alerts";
 import {
   AlertTriangle,
   Clock,
@@ -12,7 +12,20 @@ import {
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const recentAlerts = mockAlerts.slice(0, 5);
+  const { data: alerts, loading: alertsLoading } = useAlerts({ fallbackToMock: true, pageSize: 5 });
+  const { data: stats, loading: statsLoading } = useAlertStats(true);
+
+  const loading = alertsLoading || statsLoading;
+  const recentAlerts = alerts?.slice(0, 5) ?? [];
+  const todayStats = stats ?? { total: 0, pending: 0, processing: 0, resolved: 0, change: '+0 起' };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -31,9 +44,9 @@ export default function DashboardPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{alertStats.today}</div>
+            <div className="text-2xl font-bold">{todayStats.total}</div>
             <p className="text-xs text-muted-foreground">
-              较昨日 +2
+              较昨日 {todayStats.change}
             </p>
           </CardContent>
         </Card>
@@ -44,7 +57,7 @@ export default function DashboardPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{alertStats.pending}</div>
+            <div className="text-2xl font-bold">{todayStats.pending}</div>
             <p className="text-xs text-muted-foreground">
               较昨日 -3
             </p>
@@ -87,7 +100,7 @@ export default function DashboardPage() {
                 className="flex items-center justify-between py-2 border-b last:border-0"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{alert.title}</p>
+                  <p className="font-medium text-sm">{alert.type} - {alert.location}</p>
                   <p className="text-xs text-gray-500">{alert.location}</p>
                 </div>
                 <div className="flex items-center gap-2">
