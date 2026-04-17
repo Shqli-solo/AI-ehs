@@ -45,6 +45,9 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:11434/v1/chat/completions")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:7b")
 POSTGRES_URL = os.getenv("POSTGRES_URL", "postgresql://ehs:ehs123@localhost:5432/ehs")
+NEO4J_URL = os.getenv("NEO4J_URL", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "ehs123456")
 
 SEED_DIR = Path(__file__).parent.parent / "data" / "seed"
 
@@ -427,6 +430,51 @@ def seed_postgresql():
 
 
 # ============================================
+# Neo4j 知识图谱导入
+# ============================================
+def seed_neo4j():
+    """导入知识图谱到 Neo4j"""
+    logger.info("正在导入知识图谱到 Neo4j...")
+    try:
+        from neo4j import GraphDatabase
+    except ImportError:
+        logger.warning("neo4j 驱动未安装，跳过 Neo4j 导入")
+        return
+
+    driver = GraphDatabase.driver(NEO4J_URL, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session() as session:
+        session.run("MATCH (n) DETACH DELETE n")
+
+        kg_file = SEED_DIR / "knowledge_graph.json"
+        if kg_file.exists():
+            with open(kg_file) as f:
+                kg_data = json.load(f)
+
+            for entity in kg_data.get("entities", []):
+                session.run(
+                    "MERGE (n:Entity {id: $id}) SET n.name = $name, n.type = $type, n.properties = $props",
+                    id=entity["id"],
+                    name=entity["name"],
+                    type=entity["type"],
+                    props=entity.get("properties", {}),
+                )
+
+            for rel in kg_data.get("relations", []):
+                session.run(
+                    "MATCH (a:Entity {id: $source}), (b:Entity {id: $target}) "
+                    "MERGE (a)-[r:RELATES {type: $rel_type}]->(b) "
+                    "SET r.properties = $props",
+                    source=rel["source"],
+                    target=rel["target"],
+                    rel_type=rel["type"],
+                    props=rel.get("properties", {}),
+                )
+
+        logger.info("Neo4j 知识图谱导入完成")
+    driver.close()
+
+
+# ============================================
 # LLM 扩展数据生成
 # ============================================
 def generate_extended_plans():
@@ -509,6 +557,7 @@ def main():
     logger.info(f"Milvus: {MILVUS_URL}:{MILVUS_PORT}")
     logger.info(f"MinIO: {MINIO_ENDPOINT}")
     logger.info(f"PostgreSQL: {POSTGRES_URL}")
+    logger.info(f"Neo4j: {NEO4J_URL}")
     logger.info(f"LLM: {LLM_ENDPOINT}")
     logger.info("")
 
@@ -526,7 +575,10 @@ def main():
     # 4. PostgreSQL
     results["postgresql"] = seed_postgresql()
 
-    # 5. LLM 扩展数据（可选）
+    # 5. Neo4j
+    seed_neo4j()
+
+    # 6. LLM 扩展数据（可选）
     try:
         results["llm_extended"] = bool(generate_extended_plans())
     except Exception as e:

@@ -1,0 +1,6 @@
+{"id": "GD-001", "name": "气体检测仪", "type": "gas_detector", "location": "B车间东区", "status": "online", "threshold_high": 50, "threshold_low": 10, "unit": "ppm", "model": "GC-200", "installed_at": "2025-06-15"}
+{"id": "GD-002", "name": "气体检测仪", "type": "gas_detector", "location": "B车间西区", "status": "online", "threshold_high": 50, "threshold_low": 10, "unit": "ppm", "model": "GC-200", "installed_at": "2025-06-15"}
+{"id": "SD-003", "name": "烟感探测器", "type": "smoke_detector", "location": "A栋3楼东区", "status": "online", "threshold_high": 1.0, "threshold_low": 0.0, "unit": "%obs/m", "model": "SD-500", "installed_at": "2025-01-10"}
+{"id": "SD-010", "name": "烟感探测器", "type": "smoke_detector", "location": "E栋地下车库B区", "status": "online", "threshold_high": 1.0, "threshold_low": 0.0, "unit": "%obs/m", "model": "SD-500", "installed_at": "2025-02-20"}
+{"id": "TD-012", "name": "温度传感器", "type": "temperature_sensor", "location": "C仓库2层", "status": "online", "threshold_high": 45, "threshold_low": 15, "unit": "C", "model": "TS-100", "installed_at": "2025-03-20"}
+{"id": "ID-005", "name": "红外入侵探测器", "type": "infrared_sensor", "location": "D区西南角", "status": "online", "threshold_high": 1, "threshold_low": 0, "unit": "count", "model": "IR-300", "installed_at": "2025-08-01"}
