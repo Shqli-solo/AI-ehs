@@ -1,22 +1,28 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Header } from "@/components/common/Header";
+import { Sidebar } from "@/components/common/Sidebar";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
+export const metadata = {
   title: "EHS 智能安保决策中台",
-  description: "企业环境、健康与安全智能监控与决策支持系统",
+  description: "基于 GraphRAG + Multi-Agent 的智能安保系统",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="zh-CN">
-      <body className={inter.className}>{children}</body>
+      <body className="bg-gray-50 min-h-screen">
+        <Header />
+        <div className="pt-16 flex">
+          <Sidebar />
+          <main className="ml-64 flex-1 p-6">{children}</main>
+        </div>
+        <Toaster />
+      </body>
     </html>
   );
 }
