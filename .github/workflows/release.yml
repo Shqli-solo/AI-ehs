@@ -52,7 +52,7 @@ jobs:
     needs: [validate-version]
     defaults:
       run:
-        working-directory: python-ai-service
+        working-directory: apps/ehs-ai
 
     permissions:
       contents: read
@@ -84,7 +84,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: python-ai-service
+          context: apps/ehs-ai
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -120,11 +120,16 @@ jobs:
         with:
           version: 9
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Build production bundle
-        run: npm run build
+        run: pnpm run build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
