@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 from functools import wraps
+import threading
 
 from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field, field_validator
 from src.container import DIContainer
 from src.adapters.primary.auth import JWTBearer, create_jwt_token
 from src.adapters.secondary.minio import MinIOAdapter
+from src.grpc_server import serve
 
 
 # 依赖注入容器
@@ -24,10 +26,6 @@ container = DIContainer()
 def get_current_user_optional(request: Request, credentials: Optional[dict] = Depends(JWTBearer(auto_error=False, required=False))):
     """获取当前用户（可选认证）"""
     return credentials
-
-
-# 依赖注入容器
-container = DIContainer()
 
 
 # Pydantic 数据模型
@@ -87,6 +85,11 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时初始化
     print("EHS AI Service 启动中...")
+    grpc_thread = threading.Thread(
+        target=lambda: serve(port=50051),
+        daemon=True,
+    )
+    grpc_thread.start()
     yield
     # 关闭时清理
     print("EHS AI Service 关闭中...")
