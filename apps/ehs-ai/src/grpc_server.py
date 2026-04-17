@@ -170,24 +170,30 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
     def GetBatchEmbeddings(self, request, context):
         """批量术语 Embedding RPC"""
         start = time.time()
-        results = []
-        for term in request.terms:
-            rng = random.Random(hash(term))
-            embedding = [round(rng.gauss(0, 0.1), 6) for _ in range(768)]
-            norm = sum(v * v for v in embedding) ** 0.5
-            if norm > 0:
-                embedding = [v / norm for v in embedding]
-            results.append(ehs_pb2.TermEmbeddingResult(
-                term=term,
-                embedding=embedding,
-                success=True,
-            ))
+        try:
+            results = []
+            for term in request.terms:
+                rng = random.Random(hash(term))
+                embedding = [round(rng.gauss(0, 0.1), 6) for _ in range(768)]
+                norm = sum(v * v for v in embedding) ** 0.5
+                if norm > 0:
+                    embedding = [v / norm for v in embedding]
+                results.append(ehs_pb2.TermEmbeddingResult(
+                    term=term,
+                    embedding=embedding,
+                    success=True,
+                ))
 
-        return ehs_pb2.BatchEmbeddingResponse(
-            results=results,
-            request_id=request.request_id,
-            processing_time_ms=int((time.time() - start) * 1000),
-        )
+            return ehs_pb2.BatchEmbeddingResponse(
+                results=results,
+                request_id=request.request_id,
+                processing_time_ms=int((time.time() - start) * 1000),
+            )
+        except Exception as e:
+            logger.error(f"GetBatchEmbeddings error: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return ehs_pb2.BatchEmbeddingResponse()
 
 
 def serve(port: int = 50051):
