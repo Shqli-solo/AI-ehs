@@ -17,6 +17,8 @@ public class Alert {
     private final String level;
     private final String content;
     private final LocalDateTime createdAt;
+    private String location = "未知位置";
+    private String deviceId = "";
 
     private String handledBy;
     private LocalDateTime handledAt;
@@ -93,6 +95,11 @@ public class Alert {
     public String getHandledBy() { return handledBy; }
     public LocalDateTime getHandledAt() { return handledAt; }
     public AlertStatus getStatus() { return status; }
+    public String getLocation() { return location; }
+    public String getDeviceId() { return deviceId; }
+
+    public void setLocation(String location) { this.location = location; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
     @Override
     public String toString() {

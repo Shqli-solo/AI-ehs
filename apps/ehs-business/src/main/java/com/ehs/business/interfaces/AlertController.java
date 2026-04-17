@@ -143,11 +143,11 @@ public class AlertController {
         return new AlertResponse(
             "ALT-" + alert.getId(),
             alert.getType(),
-            "未知位置",
+            alert.getLocation(),
             alert.getLevel().toLowerCase(),
             alert.getStatus().name().toLowerCase(),
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(alert.getCreatedAt()),
-            "DEV-" + alert.getId(),
+            alert.getDeviceId(),
             alert.getContent(),
             null
         );
@@ -160,11 +160,11 @@ public class AlertController {
         return new AlertResponse(
             "ALT-" + alert.getId(),
             alert.getType(),
-            "未知位置",
+            alert.getLocation(),
             alert.getLevel().toLowerCase(),
             alert.getStatus().name().toLowerCase(),
             DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(alert.getCreatedAt()),
-            "DEV-" + alert.getId(),
+            alert.getDeviceId(),
             alert.getContent(),
             aiAnalysis
         );
