@@ -92,14 +92,28 @@ public class AlertService {
     public String analyzeAlertWithAi(Long alertId) {
         return getAlertById(alertId)
             .map(alert -> {
+                int levelInt = levelToInt(alert.getLevel());
                 AlertAnalysisResponse response = pythonAiClient.analyzeAlert(
                     alert.getContent(),
                     alert.getLocation(),
                     alert.getType(),
-                    Integer.parseInt(alert.getLevel())
+                    levelInt
                 );
                 return response.getAnalysis() + "\n建议: " + response.getSuggestedAction();
             })
             .orElse("告警不存在");
+    }
+
+    /**
+     * 告警级别字符串转整数
+     */
+    private int levelToInt(String level) {
+        return switch (level.toUpperCase()) {
+            case "LOW" -> 1;
+            case "MEDIUM" -> 2;
+            case "HIGH" -> 3;
+            case "CRITICAL" -> 4;
+            default -> 0;
+        };
     }
 }

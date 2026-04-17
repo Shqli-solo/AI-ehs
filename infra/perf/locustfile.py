@@ -73,11 +73,6 @@ class DashboardUser(HttpUser):
         self.client.get("/api/stats/today", name="/api/stats/today")
 
     @task(2)
-    def get_knowledge_graph(self):
-        """获取知识图谱"""
-        self.client.get("/api/graph", name="/api/graph")
-
-    @task(1)
     def search_plans(self):
         """预案检索"""
         self.client.post(

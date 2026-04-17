@@ -77,9 +77,7 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             )
         except Exception as e:
             logger.error(f"ClassifyRisk error: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return ehs_pb2.RiskClassificationResponse()
+            context.abort(grpc.StatusCode.INTERNAL, f"ClassifyRisk failed: {e}")
 
     def AnalyzeAlert(self, request, context):
         """告警分析 RPC"""
@@ -112,9 +110,7 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             )
         except Exception as e:
             logger.error(f"AnalyzeAlert error: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return ehs_pb2.AlertAnalysisResponse()
+            context.abort(grpc.StatusCode.INTERNAL, f"AnalyzeAlert failed: {e}")
 
     def GenerateResponse(self, request, context):
         """指令微调生成 RPC"""
@@ -140,9 +136,7 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             )
         except Exception as e:
             logger.error(f"GenerateResponse error: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return ehs_pb2.ResponseGenerationResponse()
+            context.abort(grpc.StatusCode.INTERNAL, f"GenerateResponse failed: {e}")
 
     def GetTermEmbedding(self, request, context):
         """术语 Embedding RPC"""
@@ -163,9 +157,7 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             )
         except Exception as e:
             logger.error(f"GetTermEmbedding error: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return ehs_pb2.TermEmbeddingResponse()
+            context.abort(grpc.StatusCode.INTERNAL, f"GetTermEmbedding failed: {e}")
 
     def GetBatchEmbeddings(self, request, context):
         """批量术语 Embedding RPC"""
@@ -191,9 +183,7 @@ class EhsAiServicer(ehs_pb2_grpc.EhsAiServiceServicer):
             )
         except Exception as e:
             logger.error(f"GetBatchEmbeddings error: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return ehs_pb2.BatchEmbeddingResponse()
+            context.abort(grpc.StatusCode.INTERNAL, f"GetBatchEmbeddings failed: {e}")
 
 
 def serve(port: int = 50051) -> grpc.server:
@@ -212,4 +202,21 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    serve()
+    import signal
+    import sys
+
+    server = serve()
+    logger.info("Press Ctrl+C to stop")
+
+    def shutdown(signum, frame):
+        logger.info("Shutting down gRPC server...")
+        server.stop(grace=5)
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        shutdown(None, None)

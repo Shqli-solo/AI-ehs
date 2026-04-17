@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: python-ai-service
+        working-directory: apps/ehs-ai
 
     steps:
       - name: Checkout code
@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('python-ai-service/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('apps/ehs-ai/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-coverage
-          path: python-ai-service/coverage.xml
+          path: apps/ehs-ai/coverage.xml
         if: success()
 
   python-build:
@@ -70,7 +70,7 @@ jobs:
     needs: [python-test]
     defaults:
       run:
-        working-directory: python-ai-service
+        working-directory: apps/ehs-ai
 
     steps:
       - name: Checkout code
@@ -112,24 +112,23 @@ jobs:
         with:
           path: |
             apps/admin-console/node_modules
-            node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('apps/admin-console/package-lock.json', 'package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('apps/admin-console/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
         continue-on-error: true
 
       - name: Run TypeScript check
-        run: npm run typecheck
+        run: pnpm run typecheck
         continue-on-error: true
 
       - name: Run tests
-        run: npm run test -- --coverage
+        run: pnpm run test -- --coverage
         continue-on-error: true
 
       - name: Upload coverage to GitHub
@@ -162,10 +161,10 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Build production bundle
-        run: npm run build
+        run: pnpm run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -253,10 +252,10 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: cd apps/admin-console && npx playwright install --with-deps
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: cd apps/admin-console && pnpm run test:e2e
         continue-on-error: true
 
       - name: Upload E2E test results

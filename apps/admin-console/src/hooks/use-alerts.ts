@@ -101,7 +101,7 @@ export function useAlerts(options: UseAlertsOptions = {}): UseAlertsReturn {
         type: mapAlertType(a.type),
         title: `${a.type} - ${a.location}`,
         content: a.content || "",
-        riskLevel: a.riskLevel as Alert["riskLevel"],
+        riskLevel: mapRiskLevel(a.riskLevel),
         status: a.status as Alert["status"],
         location: a.location,
         deviceId: a.deviceId || "",
@@ -499,4 +499,17 @@ function mapAlertType(type: string): Alert["type"] {
     入侵检测: "intrusion",
   };
   return typeMap[type] || "smoke";
+}
+
+/**
+ * 将后端风险等级映射到前端等级（LOW/MEDIUM/HIGH/CRITICAL → low/medium/high）
+ */
+function mapRiskLevel(level: string): Alert["riskLevel"] {
+  const levelMap: Record<string, Alert["riskLevel"]> = {
+    LOW: "low",
+    MEDIUM: "medium",
+    HIGH: "high",
+    CRITICAL: "high", // 前端暂无 critical，归入 high
+  };
+  return levelMap[level.toUpperCase()] || "low";
 }
