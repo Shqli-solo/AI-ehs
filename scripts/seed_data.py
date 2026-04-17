@@ -439,39 +439,44 @@ def seed_neo4j():
         from neo4j import GraphDatabase
     except ImportError:
         logger.warning("neo4j 驱动未安装，跳过 Neo4j 导入")
-        return
+        return False
 
-    driver = GraphDatabase.driver(NEO4J_URL, auth=(NEO4J_USER, NEO4J_PASSWORD))
-    with driver.session() as session:
-        session.run("MATCH (n) DETACH DELETE n")
+    try:
+        driver = GraphDatabase.driver(NEO4J_URL, auth=(NEO4J_USER, NEO4J_PASSWORD))
+        with driver.session() as session:
+            session.run("MATCH (n) DETACH DELETE n")
 
-        kg_file = SEED_DIR / "knowledge_graph.json"
-        if kg_file.exists():
-            with open(kg_file) as f:
-                kg_data = json.load(f)
+            kg_file = SEED_DIR / "knowledge_graph.json"
+            if kg_file.exists():
+                with open(kg_file) as f:
+                    kg_data = json.load(f)
 
-            for entity in kg_data.get("entities", []):
-                session.run(
-                    "MERGE (n:Entity {id: $id}) SET n.name = $name, n.type = $type, n.properties = $props",
-                    id=entity["id"],
-                    name=entity["name"],
-                    type=entity["type"],
-                    props=entity.get("properties", {}),
-                )
+                for entity in kg_data.get("entities", []):
+                    session.run(
+                        "MERGE (n:Entity {id: $id}) SET n.name = $name, n.type = $type, n.properties = $props",
+                        id=entity["id"],
+                        name=entity["name"],
+                        type=entity["type"],
+                        props=entity.get("properties", {}),
+                    )
 
-            for rel in kg_data.get("relations", []):
-                session.run(
-                    "MATCH (a:Entity {id: $source}), (b:Entity {id: $target}) "
-                    "MERGE (a)-[r:RELATES {type: $rel_type}]->(b) "
-                    "SET r.properties = $props",
-                    source=rel["source"],
-                    target=rel["target"],
-                    rel_type=rel["type"],
-                    props=rel.get("properties", {}),
-                )
+                for rel in kg_data.get("relations", []):
+                    session.run(
+                        "MATCH (a:Entity {id: $source}), (b:Entity {id: $target}) "
+                        "MERGE (a)-[r:RELATES {type: $rel_type}]->(b) "
+                        "SET r.properties = $props",
+                        source=rel["source"],
+                        target=rel["target"],
+                        rel_type=rel["type"],
+                        props=rel.get("properties", {}),
+                    )
 
-        logger.info("Neo4j 知识图谱导入完成")
-    driver.close()
+            logger.info("Neo4j 知识图谱导入完成")
+        driver.close()
+        return True
+    except Exception as e:
+        logger.error(f"Neo4j 知识图谱导入失败: {e}")
+        return False
 
 
 # ============================================
@@ -576,7 +581,7 @@ def main():
     results["postgresql"] = seed_postgresql()
 
     # 5. Neo4j
-    seed_neo4j()
+    results["neo4j"] = seed_neo4j()
 
     # 6. LLM 扩展数据（可选）
     try:

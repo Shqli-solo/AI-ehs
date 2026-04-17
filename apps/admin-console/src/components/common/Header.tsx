@@ -3,6 +3,7 @@
 import { Bell, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { alertStats } from "@/mock/alerts";
 
 export function Header() {
   return (
@@ -20,7 +21,7 @@ export function Header() {
         <button className="relative p-2 text-gray-600 hover:text-gray-900">
           <Bell className="h-5 w-5" />
           <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
-            3
+            {alertStats.pending}
           </span>
         </button>
         <Avatar>
