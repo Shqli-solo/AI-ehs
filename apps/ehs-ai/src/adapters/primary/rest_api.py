@@ -18,6 +18,7 @@ from src.container import DIContainer
 from src.adapters.primary.auth import JWTBearer, create_jwt_token
 from src.adapters.secondary.minio import MinIOAdapter
 from src.grpc_server import serve
+from src.monitoring.metrics import MetricsMiddleware
 
 
 # 依赖注入容器
@@ -111,8 +112,18 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-Request-ID"],  # 明确声明需要的 headers
 )
 
+# 注册 Prometheus metrics 端点和中间件
+from fastapi.responses import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
-@app.get("/health", response_model=HealthResponse)
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+app.add_middleware(MetricsMiddleware)
 async def health_check():
     """健康检查接口（公开）"""
     return HealthResponse(
