@@ -1,17 +1,41 @@
 """
 微调数据生成器
 生成 4 类微调数据：指令微调、风险分级、合规检查、术语 Embedding
+
+用法：
+    python scripts/fine_tune/generate_data.py [--seed 42] [--output-dir data/fine_tune]
 """
 
 import json
 import random
 import os
+import argparse
+import logging
 from pathlib import Path
 
-random.seed(42)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+logger = logging.getLogger(__name__)
 
 SEED_DIR = Path(__file__).parent.parent.parent / "data" / "seed"
-OUTPUT_DIR = Path(__file__).parent.parent.parent / "data" / "fine_tune"
+
+# Risk-appropriate recommendation mapping
+RISK_RECOMMENDATIONS = {
+    "high": [
+        "立即启动应急预案，疏散人员，联系消防部门",
+        "启动紧急疏散程序，拨打119报警，关闭通风系统",
+        "立即切断危险区域电源，组织人员撤离",
+    ],
+    "medium": [
+        "启动通风系统，通知维护人员检查泄漏源，持续监控",
+        "检查设备运行状态，启动备用系统，监控数据变化",
+        "派遣人员现场确认，调取监控录像记录",
+    ],
+    "low": [
+        "派遣人员现场确认是否为误报",
+        "记录数据并安排定期巡检，无需紧急处置",
+        "检查传感器状态，校准读数",
+    ],
+}
 
 # ============================================
 # 1. 指令微调数据
@@ -59,46 +83,6 @@ INSTRUCTION_TEMPLATES = [
 ]
 
 
-def generate_instruction_data():
-    train_data = []
-    eval_data = []
-
-    for template in INSTRUCTION_TEMPLATES:
-        for scenario in template["scenarios"]:
-            item = {
-                "instruction": template["instruction"],
-                "input": scenario["input"],
-                "output": scenario["output"],
-            }
-            train_data.append(item)
-
-    locations = ["A栋", "B车间", "C仓库", "D区", "E栋"]
-    alert_types = ["烟感报警", "气体泄漏", "温度异常", "入侵检测", "烟雾报警"]
-    risk_levels = ["high", "medium", "low"]
-    recommendations = [
-        "立即启动应急预案，疏散人员",
-        "通知维护人员检查设备",
-        "持续监控并记录数据变化",
-        "启动备用系统，确认故障范围",
-    ]
-
-    for _ in range(480):
-        loc = random.choice(locations)
-        alert = random.choice(alert_types)
-        risk = random.choice(risk_levels)
-        rec = random.choice(recommendations)
-        train_data.append({
-            "instruction": "根据以下告警内容，评估风险等级并给出处置建议。以 JSON 格式输出，包含 risk_level (high/medium/low) 和 recommendation 字段。",
-            "input": f"{loc}{alert}，请评估风险",
-            "output": json.dumps({"risk_level": risk, "recommendation": rec}, ensure_ascii=False),
-        })
-
-    random.shuffle(train_data)
-    eval_data = train_data[:100]
-    train_data = train_data[100:]
-    return train_data, eval_data
-
-
 # ============================================
 # 2. 风险分级数据
 # ============================================
@@ -122,37 +106,6 @@ RISK_SAMPLES = [
 ]
 
 
-def generate_risk_data():
-    train_data = []
-    eval_data = []
-
-    for text, label in RISK_SAMPLES:
-        train_data.append({"text": text, "label": label})
-
-    templates_low = ["设备运行正常，{}传感器无异常", "巡检发现{}，无安全隐患", "{}读数在正常范围内"]
-    templates_medium = ["{}超标，需要关注", "{}异常，启动处置流程", "检测到{}，正在确认中"]
-    templates_high = ["{}达到危险值，立即疏散", "发生{}，启动应急预案", "{}风险极高，需紧急处置"]
-    subjects = ["烟感", "温度", "气体", "入侵", "烟雾", "化学品", "压力", "湿度"]
-
-    for _ in range(970):
-        r = random.random()
-        if r < 0.33:
-            text = random.choice(templates_low).format(random.choice(subjects))
-            label = 0
-        elif r < 0.66:
-            text = random.choice(templates_medium).format(random.choice(subjects))
-            label = 1
-        else:
-            text = random.choice(templates_high).format(random.choice(subjects))
-            label = 2
-        train_data.append({"text": text, "label": label})
-
-    random.shuffle(train_data)
-    eval_data = train_data[:200]
-    train_data = train_data[200:]
-    return train_data, eval_data
-
-
 # ============================================
 # 3. 合规检查数据
 # ============================================
@@ -164,39 +117,6 @@ COMPLIANCE_SAMPLES = [
     ("温度异常时启动冷却系统并通知维护", "温度异常预案需包含降温和通知", 1),
     ("入侵检测后未采取任何措施", "入侵检测预案需包含人员派遣", 0),
 ]
-
-
-def generate_compliance_data():
-    train_data = []
-    eval_data = []
-
-    for plan, rule, result in COMPLIANCE_SAMPLES:
-        train_data.append({"plan": plan, "rule": rule, "compliant": result})
-
-    plan_templates_pass = ["发生{}后立即{}并{}", "检测到{}时启动{}并通知{}", "当{}超标时执行{}和{}"]
-    plan_templates_fail = ["发生{}后不采取行动", "检测到{}时忽略告警", "当{}超标时继续作业"]
-    rules_pass = ["预案需包含应急响应措施", "预案需包含人员疏散方案", "预案需包含设备处置流程"]
-    rules_fail = ["预案缺少关键处置步骤", "预案未考虑人员安全", "预案未包含设备隔离措施"]
-    events = ["火灾", "泄漏", "爆炸", "入侵", "温度异常"]
-    actions_pass = ["疏散", "隔离", "通知", "灭火", "关闭阀门"]
-    actions_fail = ["观察", "等待", "忽略", "继续"]
-
-    for _ in range(280):
-        r = random.random()
-        if r < 0.7:
-            plan = random.choice(plan_templates_pass).format(random.choice(events), random.choice(actions_pass), random.choice(actions_pass))
-            rule = random.choice(rules_pass)
-            result = 1
-        else:
-            plan = random.choice(plan_templates_fail).format(random.choice(events), random.choice(actions_fail))
-            rule = random.choice(rules_fail)
-            result = 0
-        train_data.append({"plan": plan, "rule": rule, "compliant": result})
-
-    random.shuffle(train_data)
-    eval_data = train_data[:60]
-    train_data = train_data[60:]
-    return train_data, eval_data
 
 
 # ============================================
@@ -217,7 +137,109 @@ EHS_TERM_PAIRS = [
 ]
 
 
-def generate_embedding_data():
+def generate_instruction_data(rng: random.Random):
+    train_data = []
+    eval_data = []
+
+    for template in INSTRUCTION_TEMPLATES:
+        for scenario in template["scenarios"]:
+            item = {
+                "instruction": template["instruction"],
+                "input": scenario["input"],
+                "output": scenario["output"],
+            }
+            train_data.append(item)
+
+    locations = ["A栋", "B车间", "C仓库", "D区", "E栋"]
+    alert_types = ["烟感报警", "气体泄漏", "温度异常", "入侵检测", "烟雾报警"]
+
+    for _ in range(480):
+        loc = rng.choice(locations)
+        alert = rng.choice(alert_types)
+        risk = rng.choice(["high", "medium", "low"])
+        rec = rng.choice(RISK_RECOMMENDATIONS[risk])
+        train_data.append({
+            "instruction": "根据以下告警内容，评估风险等级并给出处置建议。以 JSON 格式输出，包含 risk_level (high/medium/low) 和 recommendation 字段。",
+            "input": f"{loc}{alert}，请评估风险",
+            "output": json.dumps({"risk_level": risk, "recommendation": rec}, ensure_ascii=False),
+        })
+
+    # Use hand-authored seed samples (INSTRUCTION_TEMPLATES) for eval
+    for template in INSTRUCTION_TEMPLATES:
+        for scenario in template["scenarios"]:
+            eval_data.append({
+                "instruction": template["instruction"],
+                "input": scenario["input"],
+                "output": scenario["output"],
+            })
+
+    rng.shuffle(train_data)
+    return train_data, eval_data
+
+
+def generate_risk_data(rng: random.Random):
+    train_data = []
+    eval_data = []
+
+    # Reserve hand-authored samples for eval
+    for text, label in RISK_SAMPLES:
+        eval_data.append({"text": text, "label": label})
+
+    templates_low = ["设备运行正常，{}传感器无异常", "巡检发现{}，无安全隐患", "{}读数在正常范围内"]
+    templates_medium = ["{}超标，需要关注", "{}异常，启动处置流程", "检测到{}，正在确认中"]
+    templates_high = ["{}达到危险值，立即疏散", "发生{}，启动应急预案", "{}风险极高，需紧急处置"]
+    subjects = ["烟感", "温度", "气体", "入侵", "烟雾", "化学品", "压力", "湿度"]
+
+    for _ in range(970):
+        r = rng.random()
+        if r < 0.33:
+            text = rng.choice(templates_low).format(rng.choice(subjects))
+            label = 0
+        elif r < 0.66:
+            text = rng.choice(templates_medium).format(rng.choice(subjects))
+            label = 1
+        else:
+            text = rng.choice(templates_high).format(rng.choice(subjects))
+            label = 2
+        train_data.append({"text": text, "label": label})
+
+    rng.shuffle(train_data)
+    return train_data, eval_data
+
+
+def generate_compliance_data(rng: random.Random):
+    train_data = []
+    eval_data = []
+
+    # Reserve hand-authored samples for eval
+    for plan, rule, result in COMPLIANCE_SAMPLES:
+        eval_data.append({"plan": plan, "rule": rule, "compliant": result})
+
+    plan_templates_pass = ["发生{}后立即{}并{}", "检测到{}时启动{}并通知{}", "当{}超标时执行{}和{}"]
+    plan_templates_fail = ["发生{}后不采取行动", "检测到{}时忽略告警", "当{}超标时继续作业"]
+    rules_pass = ["预案需包含应急响应措施", "预案需包含人员疏散方案", "预案需包含设备处置流程"]
+    rules_fail = ["预案缺少关键处置步骤", "预案未考虑人员安全", "预案未包含设备隔离措施"]
+    events = ["火灾", "泄漏", "爆炸", "入侵", "温度异常"]
+    actions_pass = ["疏散", "隔离", "通知", "灭火", "关闭阀门"]
+    actions_fail = ["观察", "等待", "忽略", "继续"]
+
+    for _ in range(280):
+        r = rng.random()
+        if r < 0.7:
+            plan = rng.choice(plan_templates_pass).format(rng.choice(events), rng.choice(actions_pass), rng.choice(actions_pass))
+            rule = rng.choice(rules_pass)
+            result = 1
+        else:
+            plan = rng.choice(plan_templates_fail).format(rng.choice(events), rng.choice(actions_fail))
+            rule = rng.choice(rules_fail)
+            result = 0
+        train_data.append({"plan": plan, "rule": rule, "compliant": result})
+
+    rng.shuffle(train_data)
+    return train_data, eval_data
+
+
+def generate_embedding_data(rng: random.Random):
     all_pairs = list(EHS_TERM_PAIRS)
 
     terms_positive = [("烟感", "烟雾"), ("报警", "告警"), ("处置", "应急"), ("化学品", "危化品"), ("喷淋", "洒水"), ("通风", "排风"), ("警戒", "警戒线"), ("灭火", "消防"), ("安全", "防护"), ("监控", "监测")]
@@ -229,44 +251,51 @@ def generate_embedding_data():
         all_pairs.append({"term_a": a, "term_b": b, "related": 0})
 
     while len(all_pairs) < 2000:
-        base = random.choice(EHS_TERM_PAIRS)
-        suffix = random.choice(["传感器", "检测器", "报警器", "系统", "装置"])
+        base = rng.choice(EHS_TERM_PAIRS)
+        suffix = rng.choice(["传感器", "检测器", "报警器", "系统", "装置"])
         all_pairs.append({"term_a": base["term_a"] + suffix, "term_b": base["term_b"] + suffix, "related": base["related"]})
 
-    random.shuffle(all_pairs)
-    return all_pairs[:2000]
+    rng.shuffle(all_pairs)
+    # Split into train/eval (90/10)
+    split = int(0.9 * len(all_pairs))
+    return all_pairs[:split], all_pairs[split:]
 
-
-# ============================================
-# 主函数
-# ============================================
 
 def main():
-    os.makedirs(OUTPUT_DIR / "instruction", exist_ok=True)
-    os.makedirs(OUTPUT_DIR / "risk", exist_ok=True)
-    os.makedirs(OUTPUT_DIR / "compliance", exist_ok=True)
-    os.makedirs(OUTPUT_DIR / "embedding", exist_ok=True)
+    parser = argparse.ArgumentParser(description="EHS 微调数据生成器")
+    parser.add_argument("--seed", type=int, default=42, help="随机种子")
+    parser.add_argument("--output-dir", type=str, default=None, help="输出目录")
+    args = parser.parse_args()
 
-    train, eval = generate_instruction_data()
-    _write_jsonl(OUTPUT_DIR / "instruction" / "train.jsonl", train)
-    _write_jsonl(OUTPUT_DIR / "instruction" / "eval.jsonl", eval)
-    print(f"指令微调: train={len(train)}, eval={len(eval)}")
+    rng = random.Random(args.seed)
+    output_dir = Path(args.output_dir) if args.output_dir else SEED_DIR.parent / "fine_tune"
 
-    train, eval = generate_risk_data()
-    _write_jsonl(OUTPUT_DIR / "risk" / "train.jsonl", train)
-    _write_jsonl(OUTPUT_DIR / "risk" / "eval.jsonl", eval)
-    print(f"风险分级: train={len(train)}, eval={len(eval)}")
+    os.makedirs(output_dir / "instruction", exist_ok=True)
+    os.makedirs(output_dir / "risk", exist_ok=True)
+    os.makedirs(output_dir / "compliance", exist_ok=True)
+    os.makedirs(output_dir / "embedding", exist_ok=True)
 
-    train, eval = generate_compliance_data()
-    _write_jsonl(OUTPUT_DIR / "compliance" / "train.jsonl", train)
-    _write_jsonl(OUTPUT_DIR / "compliance" / "eval.jsonl", eval)
-    print(f"合规检查: train={len(train)}, eval={len(eval)}")
+    train, eval = generate_instruction_data(rng)
+    _write_jsonl(output_dir / "instruction" / "train.jsonl", train)
+    _write_jsonl(output_dir / "instruction" / "eval.jsonl", eval)
+    logger.info(f"指令微调: train={len(train)}, eval={len(eval)}")
 
-    pairs = generate_embedding_data()
-    _write_jsonl(OUTPUT_DIR / "embedding" / "term_pairs.jsonl", pairs)
-    print(f"术语 Embedding: {len(pairs)} 对")
+    train, eval = generate_risk_data(rng)
+    _write_jsonl(output_dir / "risk" / "train.jsonl", train)
+    _write_jsonl(output_dir / "risk" / "eval.jsonl", eval)
+    logger.info(f"风险分级: train={len(train)}, eval={len(eval)}")
 
-    print("\n所有数据生成完成！")
+    train, eval = generate_compliance_data(rng)
+    _write_jsonl(output_dir / "compliance" / "train.jsonl", train)
+    _write_jsonl(output_dir / "compliance" / "eval.jsonl", eval)
+    logger.info(f"合规检查: train={len(train)}, eval={len(eval)}")
+
+    train_pairs, eval_pairs = generate_embedding_data(rng)
+    _write_jsonl(output_dir / "embedding" / "train.jsonl", train_pairs)
+    _write_jsonl(output_dir / "embedding" / "eval.jsonl", eval_pairs)
+    logger.info(f"术语 Embedding: train={len(train_pairs)}, eval={len(eval_pairs)}")
+
+    logger.info("所有数据生成完成！")
 
 
 def _write_jsonl(path, data):

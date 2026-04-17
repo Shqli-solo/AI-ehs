@@ -139,7 +139,7 @@ services:
     image: neo4j:5.14
     container_name: ehs-neo4j
     environment:
-      - NEO4J_AUTH=neo4j/ehs123456
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-ehs123456}
       - NEO4J_PLUGINS=["apoc"]
     ports:
       - "7474:7474"

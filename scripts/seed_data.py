@@ -465,8 +465,8 @@ def seed_neo4j():
                         "MATCH (a:Entity {id: $source}), (b:Entity {id: $target}) "
                         "MERGE (a)-[r:RELATES {type: $rel_type}]->(b) "
                         "SET r.properties = $props",
-                        source=rel["source"],
-                        target=rel["target"],
+                        source=rel["from"],
+                        target=rel["to"],
                         rel_type=rel["type"],
                         props=rel.get("properties", {}),
                     )
