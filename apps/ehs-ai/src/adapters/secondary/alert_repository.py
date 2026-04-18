@@ -1,96 +1,117 @@
-"""SQLite 告警存储层
+"""PostgreSQL 告警存储层
 
 职责：告警记录的持久化和查询
+使用 psycopg2 连接池，支持生产级并发
 """
-import sqlite3
 import json
 import logging
-import os
-from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+
+import psycopg2
+from psycopg2 import pool
 
 logger = logging.getLogger(__name__)
 
 
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS alerts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    alert_id TEXT UNIQUE NOT NULL,
-    device_id TEXT NOT NULL,
-    device_type TEXT NOT NULL,
-    alert_type TEXT NOT NULL,
+    id SERIAL PRIMARY KEY,
+    alert_id UUID UNIQUE NOT NULL,
+    device_id VARCHAR(50) NOT NULL,
+    device_type VARCHAR(50) NOT NULL,
+    alert_type VARCHAR(50) NOT NULL,
     alert_content TEXT NOT NULL,
-    location TEXT NOT NULL,
-    alert_level INTEGER NOT NULL,
-    risk_level TEXT NOT NULL DEFAULT 'unknown',
-    status TEXT NOT NULL DEFAULT 'pending',
-    plans TEXT NOT NULL DEFAULT '[]',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    location VARCHAR(200) NOT NULL,
+    alert_level INTEGER NOT NULL CHECK (alert_level BETWEEN 1 AND 4),
+    risk_level VARCHAR(20) NOT NULL DEFAULT 'unknown',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    plans JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )
 """
 
+CREATE_INDEXES_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_risk_level ON alerts(risk_level)",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC)",
+]
+
 
 class AlertRepository:
-    """告警 SQLite 仓储"""
+    """告警 PostgreSQL 仓储"""
 
-    def __init__(self, db_path: str = "data/ehs_alerts.db"):
-        self.db_path = db_path
+    def __init__(
+        self,
+        database: str = "ehs",
+        user: str = "ehs",
+        password: str = "ehs123",
+        host: str = "localhost",
+        port: int = 5432,
+        minconn: int = 1,
+        maxconn: int = 10,
+    ):
+        self._pool = pool.SimpleConnectionPool(
+            minconn, maxconn,
+            dbname=database, user=user, password=password,
+            host=host, port=port,
+        )
         self._init_db()
 
-    def _get_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+    def _get_conn(self):
+        return self._pool.getconn()
+
+    def _release_conn(self, conn):
+        self._pool.putconn(conn)
 
     def _init_db(self):
-        """初始化数据库表"""
-        db_dir = os.path.dirname(self.db_path)
-        if db_dir:
-            os.makedirs(db_dir, exist_ok=True)
+        """初始化数据库表和索引"""
         conn = self._get_conn()
         try:
-            conn.execute(CREATE_TABLE_SQL)
-            conn.commit()
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(CREATE_TABLE_SQL)
+                for idx_sql in CREATE_INDEXES_SQL:
+                    cur.execute(idx_sql)
         finally:
-            conn.close()
+            self._release_conn(conn)
 
     def save_alert(self, alert: Dict[str, Any]) -> str:
-        """
-        保存告警记录
-
-        Args:
-            alert: 包含 alert_id, device_id, device_type, alert_type,
-                   alert_content, location, alert_level, risk_level, status, plans
-
-        Returns:
-            alert_id
-        """
+        """保存告警记录"""
         conn = self._get_conn()
         try:
-            conn.execute(
-                """INSERT OR REPLACE INTO alerts
-                   (alert_id, device_id, device_type, alert_type, alert_content,
-                    location, alert_level, risk_level, status, plans, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    alert["alert_id"],
-                    alert["device_id"],
-                    alert["device_type"],
-                    alert["alert_type"],
-                    alert["alert_content"],
-                    alert["location"],
-                    alert["alert_level"],
-                    alert.get("risk_level", "unknown"),
-                    alert.get("status", "pending"),
-                    json.dumps(alert.get("plans", []), ensure_ascii=False),
-                    datetime.now(timezone.utc).isoformat(),
-                ),
-            )
+            conn.autocommit = False
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO alerts
+                       (alert_id, device_id, device_type, alert_type, alert_content,
+                        location, alert_level, risk_level, status, plans)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       ON CONFLICT (alert_id) DO UPDATE SET
+                           status = EXCLUDED.status,
+                           risk_level = EXCLUDED.risk_level,
+                           plans = EXCLUDED.plans,
+                           updated_at = NOW()""",
+                    (
+                        alert["alert_id"],
+                        alert["device_id"],
+                        alert["device_type"],
+                        alert["alert_type"],
+                        alert["alert_content"],
+                        alert["location"],
+                        alert["alert_level"],
+                        alert.get("risk_level", "unknown"),
+                        alert.get("status", "pending"),
+                        json.dumps(alert.get("plans", []), ensure_ascii=False),
+                    ),
+                )
             conn.commit()
             return alert["alert_id"]
+        except Exception:
+            conn.rollback()
+            raise
         finally:
-            conn.close()
+            self._release_conn(conn)
 
     def list_alerts(
         self,
@@ -99,37 +120,29 @@ class AlertRepository:
         page: int = 1,
         page_size: int = 10,
     ) -> List[Dict[str, Any]]:
-        """
-        查询告警列表
-
-        Args:
-            status: 按状态过滤（可选）
-            risk_level: 按风险等级过滤（可选）
-            page: 页码（从 1 开始）
-            page_size: 每页数量
-
-        Returns:
-            告警列表，按创建时间倒序
-        """
+        """查询告警列表"""
         conn = self._get_conn()
         try:
             query = "SELECT * FROM alerts WHERE 1=1"
             params: list = []
 
             if status:
-                query += " AND status = ?"
+                query += " AND status = %s"
                 params.append(status)
             if risk_level:
-                query += " AND risk_level = ?"
+                query += " AND risk_level = %s"
                 params.append(risk_level)
 
-            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
             params.extend([page_size, (page - 1) * page_size])
 
-            rows = conn.execute(query, params).fetchall()
-            return [self._row_to_dict(row) for row in rows]
+            with conn.cursor() as cur:
+                cur.execute(query, params)
+                rows = cur.fetchall()
+                cols = [desc[0] for desc in cur.description]
+                return [self._row_to_dict(dict(zip(cols, row))) for row in rows]
         finally:
-            conn.close()
+            self._release_conn(conn)
 
     def count_alerts(
         self,
@@ -141,60 +154,74 @@ class AlertRepository:
         try:
             query = "SELECT COUNT(*) FROM alerts WHERE 1=1"
             params: list = []
-
             if status:
-                query += " AND status = ?"
+                query += " AND status = %s"
                 params.append(status)
             if risk_level:
-                query += " AND risk_level = ?"
+                query += " AND risk_level = %s"
                 params.append(risk_level)
 
-            return conn.execute(query, params).fetchone()[0]
+            with conn.cursor() as cur:
+                cur.execute(query, params)
+                return cur.fetchone()[0]
         finally:
-            conn.close()
+            self._release_conn(conn)
 
     def get_stats(self) -> Dict[str, Any]:
         """获取告警统计"""
         conn = self._get_conn()
         try:
-            row = conn.execute(
-                """SELECT
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                    SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
-                    SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
-                    SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed
-                   FROM alerts"""
-            ).fetchone()
-            return {
-                "total": row[0] or 0,
-                "pending": row[1] or 0,
-                "processing": row[2] or 0,
-                "resolved": row[3] or 0,
-                "closed": row[4] or 0,
-            }
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT
+                        COUNT(*) as total,
+                        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+                        COUNT(*) FILTER (WHERE status = 'processing') as processing,
+                        COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
+                        COUNT(*) FILTER (WHERE status = 'closed') as closed
+                    FROM alerts
+                """)
+                row = cur.fetchone()
+                return {
+                    "total": row[0] or 0,
+                    "pending": row[1] or 0,
+                    "processing": row[2] or 0,
+                    "resolved": row[3] or 0,
+                    "closed": row[4] or 0,
+                }
         finally:
-            conn.close()
+            self._release_conn(conn)
 
     def update_status(self, alert_id: str, status: str) -> bool:
         """更新告警状态"""
         conn = self._get_conn()
         try:
-            cursor = conn.execute(
-                "UPDATE alerts SET status = ?, updated_at = ? WHERE alert_id = ?",
-                (status, datetime.now(timezone.utc).isoformat(), alert_id),
-            )
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE alerts SET status = %s, updated_at = NOW() WHERE alert_id = %s",
+                    (status, alert_id),
+                )
             conn.commit()
-            return cursor.rowcount > 0
+            return cur.rowcount > 0
+        except Exception:
+            conn.rollback()
+            raise
         finally:
-            conn.close()
+            self._release_conn(conn)
+
+    def close(self):
+        """关闭连接池"""
+        self._pool.closeall()
 
     @staticmethod
-    def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
-        """将 sqlite3.Row 转换为 dict"""
+    def _row_to_dict(row: dict) -> Dict[str, Any]:
+        """将行数据转换为 dict"""
         d = dict(row)
+        for key in ("created_at", "updated_at"):
+            if key in d and d[key]:
+                d[key] = d[key].isoformat()
         try:
-            d["plans"] = json.loads(d.get("plans", "[]"))
+            d["plans"] = json.loads(d.get("plans", "[]")) if isinstance(d.get("plans"), str) else d.get("plans", [])
         except (json.JSONDecodeError, TypeError):
             d["plans"] = []
         return d

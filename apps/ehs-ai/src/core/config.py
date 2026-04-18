@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     # 认证开关（开发环境可关闭认证）
     AUTH_ENABLED: bool = True
 
+    # PostgreSQL
+    DATABASE_URL: str = "postgresql://ehs:ehs123@localhost:5432/ehs"
+    DB_SCHEMA: str = "ehs_ai"
+
     @property
     def cors_origins_list(self) -> List[str]:
         """解析 CORS 来源列表"""

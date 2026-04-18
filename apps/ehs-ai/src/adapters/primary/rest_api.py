@@ -88,10 +88,93 @@ async def lifespan(app: FastAPI):
     # 启动时初始化
     logger.info("EHS AI Service 启动中...")
     grpc_server = serve(port=50051)
+
+    # 初始化种子数据
+    _seed_alerts_if_empty()
+
     yield
     # 关闭时清理
     logger.info("EHS AI Service 关闭中，停止 gRPC 服务...")
     grpc_server.stop(grace=5)
+
+
+def _seed_alerts_if_empty():
+    """如果数据库为空，插入种子数据"""
+    try:
+        alert_repo = container.get_alert_repository()
+    except Exception as e:
+        logger.warning(f"种子数据初始化失败: {e}")
+        return
+
+    if alert_repo.count_alerts() > 0:
+        return
+
+    seed_data = [
+        {
+            "alert_id": "a1b2c3d4-0001-4000-8000-000000000001",
+            "device_id": "DEV-001",
+            "device_type": "烟雾传感器",
+            "alert_type": "烟火告警",
+            "alert_content": "红外传感器检测到A栋1楼大厅温度异常升高，疑似火情",
+            "location": "A栋1楼大厅",
+            "alert_level": 4,
+            "risk_level": "high",
+            "status": "pending",
+            "plans": [{"title": "火灾应急预案", "content": "1. 确认火情\n2. 启动消防系统\n3. 疏散人员", "risk_level": "high"}],
+        },
+        {
+            "alert_id": "a1b2c3d4-0002-4000-8000-000000000002",
+            "device_id": "DEV-002",
+            "device_type": "红外移动传感器",
+            "alert_type": "入侵检测",
+            "alert_content": "夜间B栋3楼走廊移动传感器触发告警",
+            "location": "B栋3楼走廊",
+            "alert_level": 2,
+            "risk_level": "medium",
+            "status": "processing",
+            "plans": [],
+        },
+        {
+            "alert_id": "a1b2c3d4-0003-4000-8000-000000000003",
+            "device_id": "DEV-003",
+            "device_type": "水压传感器",
+            "alert_type": "设备故障",
+            "alert_content": "C栋地下室水泵压力异常，低于正常值30%",
+            "location": "C栋地下室",
+            "alert_level": 1,
+            "risk_level": "low",
+            "status": "resolved",
+            "plans": [],
+        },
+        {
+            "alert_id": "a1b2c3d4-0004-4000-8000-000000000004",
+            "device_id": "DEV-004",
+            "device_type": "燃气传感器",
+            "alert_type": "燃气泄漏",
+            "alert_content": "食堂燃气管道检测到轻微泄漏，浓度超过阈值",
+            "location": "D栋食堂",
+            "alert_level": 3,
+            "risk_level": "high",
+            "status": "pending",
+            "plans": [{"title": "燃气泄漏应急预案", "content": "1. 关闭燃气总阀\n2. 打开窗户通风\n3. 禁止明火", "risk_level": "high"}],
+        },
+        {
+            "alert_id": "a1b2c3d4-0005-4000-8000-000000000005",
+            "device_id": "DEV-005",
+            "device_type": "温度传感器",
+            "alert_type": "温度异常",
+            "alert_content": "机房空调故障，温度持续上升至35°C",
+            "location": "A栋5楼机房",
+            "alert_level": 2,
+            "risk_level": "medium",
+            "status": "resolved",
+            "plans": [],
+        },
+    ]
+
+    for alert in seed_data:
+        alert_repo.save_alert(alert)
+    logger.info(f"种子数据初始化完成，插入 {len(seed_data)} 条告警")
 
 
 # 创建 FastAPI 应用
@@ -124,6 +207,8 @@ async def metrics():
 
 
 app.add_middleware(MetricsMiddleware)
+
+@app.get("/health", tags=["系统"])
 async def health_check():
     """健康检查接口（公开）"""
     return HealthResponse(

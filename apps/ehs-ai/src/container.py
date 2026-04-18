@@ -2,6 +2,7 @@
 """依赖注入容器 - 六边形架构核心"""
 from typing import Optional, Any
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from src.core.config import settings
 
@@ -27,6 +28,10 @@ class ContainerConfig:
 
     # Knowledge Graph
     knowledge_graph_path: str = ""
+
+    # PostgreSQL
+    database_url: str = "postgresql://ehs:ehs123@localhost:5432/ehs"
+    db_schema: str = "ehs_ai"
 
 
 class DIContainer:
@@ -56,7 +61,10 @@ class DIContainer:
 
     def __init__(self, config: Optional[ContainerConfig] = None):
         """初始化容器"""
-        self._config = config or ContainerConfig()
+        self._config = config or ContainerConfig(
+            database_url=settings.DATABASE_URL,
+            db_schema=settings.DB_SCHEMA,
+        )
         self._instances = {}
         self._use_mock = False
 
@@ -79,26 +87,21 @@ class DIContainer:
             else:
                 from src.core.graph_rag import GraphRAGCore
                 from src.adapters.secondary.elasticsearch import ElasticsearchAdapter
-                from src.adapters.secondary.milvus import MilvusAdapter
 
                 es_adapter = ElasticsearchAdapter(
                     url=self._config.es_url,
                     index=self._config.es_index
                 )
 
-                milvus_adapter = MilvusAdapter(
-                    url=self._config.milvus_url,
-                    port=self._config.milvus_port,
-                    collection=self._config.milvus_collection,
-                    embedding_model=self._config.embedding_model
-                )
+                # 使用 pgvector 替代 Milvus
+                pgvector = self.get_pgvector_adapter()
 
                 # 加载知识图谱
                 kg = self._load_knowledge_graph()
 
                 self._instances["graph_rag"] = GraphRAGCore(
                     text_storage=es_adapter,
-                    vector_storage=milvus_adapter,
+                    vector_storage=pgvector,
                     knowledge_graph=kg,
                 )
 
@@ -218,6 +221,37 @@ class DIContainer:
                 embedding_model=self._config.embedding_model
             )
         return self._instances["milvus_adapter"]
+
+    def get_alert_repository(self):
+        """获取告警存储实例"""
+        if "alert_repo" not in self._instances:
+            from src.adapters.secondary.alert_repository import AlertRepository
+
+            parsed = urlparse(self._config.database_url)
+            self._instances["alert_repo"] = AlertRepository(
+                database=parsed.path.lstrip("/"),
+                user=parsed.username,
+                password=parsed.password,
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+            )
+        return self._instances["alert_repo"]
+
+    def get_pgvector_adapter(self):
+        """获取 pgvector 向量适配器实例"""
+        if "pgvector" not in self._instances:
+            from src.adapters.secondary.pgvector_adapter import PgVectorAdapter
+
+            parsed = urlparse(self._config.database_url)
+            self._instances["pgvector"] = PgVectorAdapter(
+                database=parsed.path.lstrip("/"),
+                user=parsed.username,
+                password=parsed.password,
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+                embedding_model=self._config.embedding_model,
+            )
+        return self._instances["pgvector"]
 
     def clear(self):
         """清除所有缓存实例"""
