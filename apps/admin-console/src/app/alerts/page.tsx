@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { useState, useMemo } from "react";
 
 export default function AlertsPage() {
-  const { data: apiAlerts, loading, error, refresh } = useAlerts({ fallbackToMock: true });
+  const { data: apiAlerts, loading, error, refresh } = useAlerts({ fallbackToMock: false });
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");

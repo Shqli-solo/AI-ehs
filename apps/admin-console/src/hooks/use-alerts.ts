@@ -78,7 +78,7 @@ export function useAlerts(options: UseAlertsOptions = {}): UseAlertsReturn {
     status,
     riskLevel,
     pageSize = 10,
-    fallbackToMock = true,
+    fallbackToMock = false,  // 默认使用真实 API
   } = options;
 
   const [state, setState] = React.useState<HookState<Alert[]>>({
@@ -165,7 +165,7 @@ interface UseAlertStatsReturn extends HookState<AlertStats> {
  * const { stats, loading, error, refresh } = useAlertStats();
  * ```
  */
-export function useAlertStats(fallbackToMock: boolean = true): UseAlertStatsReturn {
+export function useAlertStats(fallbackToMock: boolean = false): UseAlertStatsReturn {
   const [state, setState] = React.useState<HookState<AlertStats>>({
     data: null,
     loading: false,

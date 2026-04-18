@@ -13,8 +13,8 @@ import {
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { data: alerts, loading: alertsLoading } = useAlerts({ fallbackToMock: true, pageSize: 5 });
-  const { data: stats, loading: statsLoading } = useAlertStats(true);
+  const { data: alerts, loading: alertsLoading } = useAlerts({ fallbackToMock: false, pageSize: 5 });
+  const { data: stats, loading: statsLoading } = useAlertStats(false);
 
   const loading = alertsLoading || statsLoading;
   const recentAlerts = alerts?.slice(0, 5) ?? [];
