@@ -176,9 +176,16 @@ export function useAlertStats(fallbackToMock: boolean = false): UseAlertStatsRet
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const data = await api.getTodayStats();
+      const response = await api.getTodayStats();
+      const statsData = (response as any).data || response;
       setState({
-        data,
+        data: {
+          total: statsData.total || 0,
+          pending: statsData.pending || 0,
+          processing: statsData.processing || 0,
+          resolved: statsData.resolved || 0,
+          change: statsData.change || '+0 起',
+        },
         loading: false,
         error: null,
       });

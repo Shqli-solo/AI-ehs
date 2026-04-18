@@ -138,6 +138,7 @@ export default function AlertReportPage() {
                   value={deviceId}
                   onChange={(e) => setDeviceId(e.target.value)}
                   placeholder="DEV-001"
+                  required
                   className="w-full h-10 px-3 rounded-input border border-border bg-background text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -190,6 +191,7 @@ export default function AlertReportPage() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="A栋3楼办公区"
+                    required
                     className="w-full h-10 px-3 rounded-input border border-border bg-background text-body focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -319,9 +321,9 @@ export default function AlertReportPage() {
             </button>
             <button
               type="submit"
-              disabled={loading || !alertContent}
+              disabled={loading || !alertContent || !deviceId || !location}
               className={`h-10 px-6 rounded-input text-sm font-medium text-white transition-colors ${
-                loading || !alertContent
+                loading || !alertContent || !deviceId || !location
                   ? 'bg-primary/50 cursor-not-allowed'
                   : 'bg-primary hover:bg-primary/90'
               }`}

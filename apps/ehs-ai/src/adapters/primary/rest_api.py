@@ -274,25 +274,56 @@ async def report_alert(
         # 生成告警 ID
         alert_id = str(uuid.uuid4())
 
-        # 从容器获取工作流
-        workflow = container.get_workflow()
+        # 调用 Multi-Agent 工作流
+        risk_level = "unknown"
+        plans = []
+        workflow_error = None
+        try:
+            workflow = container.get_workflow()
+            initial_state = {
+                "alert_message": request.alert_content,
+                "risk_assessment": None,
+                "emergency_plans": [],
+                "error": None
+            }
+            result = workflow.invoke(initial_state)
+            risk_level = result.get("risk_assessment", {}).get("risk_level", "unknown")
+            plans = result.get("emergency_plans", [])
+            workflow_error = result.get("error")
+        except Exception as e:
+            workflow_error = str(e)
+            logger.warning(f"工作流执行失败: {workflow_error}")
 
-        # 执行工作流
-        initial_state = {
-            "alert_message": request.alert_content,
-            "risk_assessment": None,
-            "emergency_plans": [],
-            "error": None
-        }
+        # 保存到 PostgreSQL
+        alert_repo = container.get_alert_repository()
+        alert_repo.save_alert({
+            "alert_id": alert_id,
+            "device_id": request.device_id,
+            "device_type": request.device_type,
+            "alert_type": request.alert_type,
+            "alert_content": request.alert_content,
+            "location": request.location,
+            "alert_level": request.alert_level,
+            "risk_level": risk_level,
+            "status": "pending",
+            "plans": plans,
+        })
 
-        result = workflow.invoke(initial_state)
+        if workflow_error:
+            return AlertReportResponse(
+                success=True,
+                message=f"告警已保存（AI 分析失败: {workflow_error[:50]}...）",
+                alert_id=alert_id,
+                risk_level=risk_level,
+                plans=plans,
+            )
 
         return AlertReportResponse(
             success=True,
             message="告警上报成功",
             alert_id=alert_id,
-            risk_level=result.get("risk_assessment", {}).get("risk_level", "unknown"),
-            plans=result.get("emergency_plans", [])
+            risk_level=risk_level,
+            plans=plans,
         )
 
     except Exception as e:
@@ -351,86 +382,60 @@ async def get_alert_list(
     page: int = 1,
     page_size: int = 10
 ):
-    """
-    获取告警列表（Mock 数据）
+    """获取告警列表（PostgreSQL 真实数据）"""
+    try:
+        alert_repo = container.get_alert_repository()
+        db_alerts = alert_repo.list_alerts(status=status, risk_level=risk_level, page=page, page_size=page_size)
 
-    TODO: 对接真实告警数据源
-    """
-    # Mock 告警数据
-    mock_alerts = [
-        {
-            "id": "ALT-001",
-            "type": "烟火告警",
-            "location": "A 栋 1 楼大厅",
-            "riskLevel": "high",
-            "status": "pending",
-            "time": "2026-04-16T10:30:00Z",
-            "deviceId": "DEV-001",
-            "content": "红外传感器检测到异常高温"
-        },
-        {
-            "id": "ALT-002",
-            "type": "入侵检测",
-            "location": "B 栋 3 楼走廊",
-            "riskLevel": "medium",
-            "status": "processing",
-            "time": "2026-04-16T09:15:00Z",
-            "deviceId": "DEV-002",
-            "content": "移动传感器触发告警"
-        },
-        {
-            "id": "ALT-003",
-            "type": "设备故障",
-            "location": "C 栋地下室",
-            "riskLevel": "low",
-            "status": "resolved",
-            "time": "2026-04-16T08:00:00Z",
-            "deviceId": "DEV-003",
-            "content": "水泵压力异常"
+        alerts = []
+        for a in db_alerts:
+            alerts.append({
+                "id": a.get("alert_id", ""),
+                "type": a.get("alert_type", ""),
+                "location": a.get("location", ""),
+                "riskLevel": a.get("risk_level", "unknown"),
+                "status": a.get("status", "pending"),
+                "time": a.get("created_at", ""),
+                "deviceId": a.get("device_id", ""),
+                "content": a.get("alert_content", ""),
+            })
+
+        # 获取总数用于分页
+        total = alert_repo.count_alerts(status=status, risk_level=risk_level)
+
+        return {
+            "success": True,
+            "data": {
+                "total": total,
+                "alerts": alerts
+            }
         }
-    ]
-
-    # 过滤
-    filtered = mock_alerts
-    if status:
-        filtered = [a for a in filtered if a["status"] == status]
-    if risk_level:
-        filtered = [a for a in filtered if a["riskLevel"] == risk_level]
-
-    # 分页
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated = filtered[start:end]
-
-    return {
-        "success": True,
-        "data": {
-            "total": len(filtered),
-            "pending": len([a for a in mock_alerts if a["status"] == "pending"]),
-            "processing": len([a for a in mock_alerts if a["status"] == "processing"]),
-            "resolved": len([a for a in mock_alerts if a["status"] == "resolved"]),
-            "alerts": paginated
-        }
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats/today", tags=["统计"])
 async def get_today_stats():
-    """
-    获取今日统计（Mock 数据）
+    """获取今日统计（PostgreSQL 真实数据）"""
+    try:
+        alert_repo = container.get_alert_repository()
+        stats = alert_repo.get_stats()
 
-    TODO: 对接真实统计数据
-    """
-    return {
-        "success": True,
-        "data": {
-            "total": 12,
-            "pending": 2,
-            "processing": 1,
-            "resolved": 9,
-            "change": "+3 起"
+        # 计算变化量（简化：较昨日固定值，后续可按日期统计）
+        yesterday_count = max(0, stats.get("total", 0) - 1)
+
+        return {
+            "success": True,
+            "data": {
+                "total": stats.get("total", 0),
+                "pending": stats.get("pending", 0),
+                "processing": stats.get("processing", 0),
+                "resolved": stats.get("resolved", 0),
+                "change": f"+{yesterday_count} 起"
+            }
         }
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/graph", tags=["知识图谱"])

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS alerts (
+CREATE TABLE IF NOT EXISTS ehs_ai.alerts (
     id SERIAL PRIMARY KEY,
     alert_id UUID UNIQUE NOT NULL,
     device_id VARCHAR(50) NOT NULL,
@@ -32,9 +32,9 @@ CREATE TABLE IF NOT EXISTS alerts (
 """
 
 CREATE_INDEXES_SQL = [
-    "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)",
-    "CREATE INDEX IF NOT EXISTS idx_alerts_risk_level ON alerts(risk_level)",
-    "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_status ON ehs_ai.alerts(status)",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_risk_level ON ehs_ai.alerts(risk_level)",
+    "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON ehs_ai.alerts(created_at DESC)",
 ]
 
 
@@ -83,7 +83,7 @@ class AlertRepository:
             conn.autocommit = False
             with conn.cursor() as cur:
                 cur.execute(
-                    """INSERT INTO alerts
+                    """INSERT INTO ehs_ai.alerts
                        (alert_id, device_id, device_type, alert_type, alert_content,
                         location, alert_level, risk_level, status, plans)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -123,7 +123,7 @@ class AlertRepository:
         """查询告警列表"""
         conn = self._get_conn()
         try:
-            query = "SELECT * FROM alerts WHERE 1=1"
+            query = "SELECT * FROM ehs_ai.alerts WHERE 1=1"
             params: list = []
 
             if status:
@@ -152,7 +152,7 @@ class AlertRepository:
         """查询告警总数"""
         conn = self._get_conn()
         try:
-            query = "SELECT COUNT(*) FROM alerts WHERE 1=1"
+            query = "SELECT COUNT(*) FROM ehs_ai.alerts WHERE 1=1"
             params: list = []
             if status:
                 query += " AND status = %s"
@@ -179,7 +179,7 @@ class AlertRepository:
                         COUNT(*) FILTER (WHERE status = 'processing') as processing,
                         COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
                         COUNT(*) FILTER (WHERE status = 'closed') as closed
-                    FROM alerts
+                    FROM ehs_ai.alerts
                 """)
                 row = cur.fetchone()
                 return {
@@ -198,7 +198,7 @@ class AlertRepository:
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE alerts SET status = %s, updated_at = NOW() WHERE alert_id = %s",
+                    "UPDATE ehs_ai.alerts SET status = %s, updated_at = NOW() WHERE alert_id = %s",
                     (status, alert_id),
                 )
             conn.commit()

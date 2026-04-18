@@ -12,6 +12,7 @@ from typing import Callable, Awaitable
 from contextlib import contextmanager
 
 from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, CollectorRegistry, multiprocess
 
 from .prometheus import (
@@ -47,7 +48,7 @@ def get_metrics_handler():
     return metrics_endpoint
 
 
-class MetricsMiddleware:
+class MetricsMiddleware(BaseHTTPMiddleware):
     """
     Prometheus 监控指标中间件
 
@@ -58,10 +59,7 @@ class MetricsMiddleware:
     - 活跃连接数
     """
 
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(self, request: Request, call_next) -> Response:
         # 记录活跃连接数 +1
         active_connections.inc()
 

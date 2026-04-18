@@ -15,7 +15,7 @@ from src.ports.secondary.storage import VectorStoragePort
 logger = logging.getLogger(__name__)
 
 CREATE_PLANS_TABLE = """
-CREATE TABLE IF NOT EXISTS plans (
+CREATE TABLE IF NOT EXISTS ehs_ai.plans (
     id SERIAL PRIMARY KEY,
     plan_id UUID UNIQUE NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS plans (
 
 CREATE_IVF_INDEX = """
 CREATE INDEX IF NOT EXISTS idx_plans_embedding
-ON plans USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)
+ON ehs_ai.plans USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)
 """
 
 
@@ -84,7 +84,7 @@ class PgVectorAdapter(VectorStoragePort):
                 cur.execute(
                     """SELECT plan_id, title, content, event_type, risk_level, metadata,
                               1 - (embedding <=> %s::vector) as similarity
-                       FROM plans
+                       FROM ehs_ai.plans
                        WHERE embedding IS NOT NULL
                        ORDER BY embedding <=> %s::vector
                        LIMIT %s""",
@@ -117,7 +117,7 @@ class PgVectorAdapter(VectorStoragePort):
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    """INSERT INTO plans (plan_id, title, content, embedding, metadata)
+                    """INSERT INTO ehs_ai.plans (plan_id, title, content, embedding, metadata)
                        VALUES (%s, %s, %s, %s::vector, %s)
                        ON CONFLICT (plan_id) DO UPDATE SET
                            title = EXCLUDED.title,
