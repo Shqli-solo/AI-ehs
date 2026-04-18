@@ -4,20 +4,21 @@ spring:
 
   # 数据源配置
   datasource:
-    url: jdbc:postgresql://localhost:5432/ehs_db
-    username: ehs_user
-    password: ehs_password
+    url: jdbc:postgresql://localhost:5432/ehs
+    username: ehs
+    password: ehs123
     driver-class-name: org.postgresql.Driver
 
   # JPA 配置
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        default_schema: ehs_business
 
   # 初始化配置
   sql:

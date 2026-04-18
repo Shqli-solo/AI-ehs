@@ -1,20 +1,20 @@
 package com.ehs.business.application.alert;
 
 import com.ehs.business.domain.alert.Alert;
+import com.ehs.business.infrastructure.repository.AlertRepository;
+import com.ehs.business.infrastructure.repository.JpaAlertEntity;
 import com.ehs.business.infrastructure.grpc.PythonAiClient;
 import com.ehs.business.infrastructure.grpc.proto.AlertAnalysisResponse;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * 告警服务 - 应用层
  *
- * 负责告警业务的编排和协调
+ * 使用 Spring Data JPA 持久化告警到 PostgreSQL
  *
  * @author EHS Team
  * @since 2026-04-16
@@ -22,60 +22,62 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class AlertService {
 
-    // 内存存储（演示用，生产环境应使用数据库）
-    private final ConcurrentHashMap<Long, Alert> alertStore = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final AlertRepository alertRepository;
     private final PythonAiClient pythonAiClient;
 
-    public AlertService(PythonAiClient pythonAiClient) {
+    public AlertService(AlertRepository alertRepository, PythonAiClient pythonAiClient) {
+        this.alertRepository = alertRepository;
         this.pythonAiClient = pythonAiClient;
     }
 
     /**
-     * 创建告警
+     * 创建告警并持久化到数据库
      */
     public Alert createAlert(String type, String level, String content) {
-        Alert alert = new Alert(
-            idGenerator.getAndIncrement(),
-            type,
-            level,
-            content
-        );
-        alertStore.put(alert.getId(), alert);
-        return alert;
+        JpaAlertEntity entity = new JpaAlertEntity();
+        entity.setType(type);
+        entity.setLevel(level);
+        entity.setContent(content);
+        entity.setStatus(JpaAlertEntity.AlertStatus.PENDING);
+
+        JpaAlertEntity saved = alertRepository.save(entity);
+        return toDomain(saved);
     }
 
     /**
      * 根据 ID 获取告警
      */
     public Optional<Alert> getAlertById(Long id) {
-        return Optional.ofNullable(alertStore.get(id));
+        return alertRepository.findById(id).map(this::toDomain);
     }
 
     /**
      * 获取所有告警
      */
     public List<Alert> getAllAlerts() {
-        return new ArrayList<>(alertStore.values());
+        return alertRepository.findAll().stream()
+            .map(this::toDomain)
+            .collect(Collectors.toList());
     }
 
     /**
      * 根据级别获取告警
      */
     public List<Alert> getAlertsByLevel(String level) {
-        return alertStore.values().stream()
-            .filter(alert -> level.equalsIgnoreCase(alert.getLevel()))
-            .toList();
+        return alertRepository.findByLevel(level).stream()
+            .map(this::toDomain)
+            .collect(Collectors.toList());
     }
 
     /**
      * 处理告警（标记为已处理）
      */
     public Optional<Alert> handleAlert(Long id, String handler) {
-        return Optional.ofNullable(alertStore.get(id))
-            .map(alert -> {
-                alert.markAsHandled(handler);
-                return alert;
+        return alertRepository.findById(id)
+            .map(entity -> {
+                entity.setHandledBy(handler);
+                entity.setStatus(JpaAlertEntity.AlertStatus.HANDLED);
+                return toDomain(alertRepository.save(entity));
             });
     }
 
@@ -83,7 +85,29 @@ public class AlertService {
      * 删除告警
      */
     public boolean deleteAlert(Long id) {
-        return alertStore.remove(id) != null;
+        if (alertRepository.existsById(id)) {
+            alertRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 更新告警状态
+     */
+    public Optional<Alert> updateAlertStatus(Long id, JpaAlertEntity.AlertStatus status) {
+        return alertRepository.findById(id)
+            .map(entity -> {
+                entity.setStatus(status);
+                return toDomain(alertRepository.save(entity));
+            });
+    }
+
+    /**
+     * 按状态统计告警数量
+     */
+    public long countByStatus(JpaAlertEntity.AlertStatus status) {
+        return alertRepository.countByStatus(status);
     }
 
     /**
@@ -115,5 +139,20 @@ public class AlertService {
             case "CRITICAL" -> 4;
             default -> 0;
         };
+    }
+
+    /**
+     * JPA Entity → Domain Alert
+     */
+    private Alert toDomain(JpaAlertEntity entity) {
+        Alert alert = new Alert(
+            entity.getId(),
+            entity.getType(),
+            entity.getLevel(),
+            entity.getContent()
+        );
+        alert.setLocation(entity.getLocation() != null ? entity.getLocation() : "未知位置");
+        alert.setDeviceId(entity.getDeviceId() != null ? entity.getDeviceId() : "");
+        return alert;
     }
 }

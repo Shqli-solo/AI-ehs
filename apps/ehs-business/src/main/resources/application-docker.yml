@@ -1,0 +1,20 @@
+# Docker 环境配置
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/ehs
+    username: ehs
+    password: eh123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: ehs_business
+
+# gRPC 配置
+grpc:
+  python-ai:
+    host: ehs-ai
+    port: 50051
+    enabled: true
