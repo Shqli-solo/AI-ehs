@@ -1,5 +1,6 @@
 # EHS 智能安保决策中台 - 全栈 Docker Compose
 #
+# 架构: PostgreSQL + pgvector 统一数据存储（参考 Dify）
 # 启动方式:
 #   docker compose up -d              # 启动所有服务
 #   docker compose up -d ollama       # 仅启动基础设施
@@ -10,6 +11,28 @@ services:
   # ============================================
   # 基础设施层
   # ============================================
+
+  # PostgreSQL (业务数据库 + pgvector 向量存储)
+  # 参考: Dify 使用 pgvector/pgvector:pg16 统一存储
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ehs-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-ehs}
+      - POSTGRES_USER=${POSTGRES_USER:-ehs}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ehs123}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ehs}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   # Ollama + LLM (风险评级用 Qwen3-7B)
   ollama:
@@ -36,39 +59,6 @@ services:
       retries: 3
       start_period: 60s
 
-  # Elasticsearch (BM25 文本检索)
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: ehs-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # etcd (Milvus 依赖)
-  etcd:
-    image: quay.io/coreos/etcd:v3.5.9
-    container_name: ehs-etcd
-    environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
-    ports:
-      - "2379:2379"
-    volumes:
-      - etcd_data:/etcd/data
-    restart: unless-stopped
-
   # MinIO (多模态数据存储)
   minio:
     image: minio/minio:latest
@@ -88,51 +78,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  # Milvus Standalone (向量检索)
-  milvus:
-    image: milvusdb/milvus:v2.4.0
-    container_name: ehs-milvus
-    environment:
-      - ETCD_USE_HOST_MODE=true
-      - ETCD_ENDPOINTS=etcd:2379
-      - MINIO_ADDRESS=minio:9000
-    depends_on:
-      etcd:
-        condition: service_started
-      minio:
-        condition: service_started
-    ports:
-      - "19530:19530"
-      - "9091:9091"
-    volumes:
-      - milvus_data:/var/lib/milvus
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # PostgreSQL (业务数据库)
-  postgres:
-    image: postgres:16-alpine
-    container_name: ehs-postgres
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-ehs}
-      - POSTGRES_USER=${POSTGRES_USER:-ehs}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ehs123}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ehs}"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   # Neo4j (知识图谱)
   neo4j:
@@ -168,11 +113,8 @@ services:
       - "8000:8000"
       - "50051:50051"
     environment:
-      - ES_URL=http://elasticsearch:9200
-      - ES_INDEX=ehs_plans
-      - MILVUS_URL=milvus
-      - MILVUS_PORT=19530
-      - MILVUS_COLLECTION=ehs_plans
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ehs}:${POSTGRES_PASSWORD:-ehs123}@postgres:5432/${POSTGRES_DB:-ehs}
+      - DB_SCHEMA=ehs_ai
       - LLM_ENDPOINT=http://ollama:11434/v1/chat/completions
       - LLM_MODEL=qwen3:7b
       - MINIO_ENDPOINT=minio:9000
@@ -183,12 +125,10 @@ services:
       - JWT_SECRET=${JWT_SECRET:-ehs-jwt-secret-change-in-production}
       - AUTH_ENABLED=false
     depends_on:
+      postgres:
+        condition: service_healthy
       ollama:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      milvus:
-        condition: service_started
       minio:
         condition: service_healthy
     restart: unless-stopped
@@ -212,6 +152,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ehs}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-ehs}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-ehs123}
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA=ehs_business
       - GRPC_AI_SERVICE_HOST=ehs-ai
       - GRPC_AI_SERVICE_PORT=50051
     depends_on:
@@ -251,11 +192,8 @@ services:
       - seed
     command: python scripts/seed_data.py
     environment:
-      - ES_URL=http://elasticsearch:9200
-      - ES_INDEX=ehs_plans
-      - MILVUS_URL=milvus
-      - MILVUS_PORT=19530
-      - MILVUS_COLLECTION=ehs_plans
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ehs}:${POSTGRES_PASSWORD:-ehs123}@postgres:5432/${POSTGRES_DB:-ehs}
+      - DB_SCHEMA=ehs_ai
       - LLM_ENDPOINT=http://ollama:11434/v1/chat/completions
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
@@ -266,10 +204,6 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      milvus:
-        condition: service_started
       minio:
         condition: service_healthy
       postgres:
@@ -310,10 +244,7 @@ services:
 
 volumes:
   ollama_data:
-  es_data:
-  etcd_data:
   minio_data:
-  milvus_data:
   postgres_data:
   neo4j_data:
   prometheus_data:
